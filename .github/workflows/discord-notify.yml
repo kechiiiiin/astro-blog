@@ -5,11 +5,9 @@ on:
     types: [opened]
   pull_request:
     types: [opened]
-  deployment_status:
 
 jobs:
   notify:
-    if: github.event_name != 'deployment_status'
     runs-on: ubuntu-latest
     steps:
       - name: Notify Discord (Issue)
@@ -57,28 +55,3 @@ jobs:
               }]
             }" \
             "$DISCORD_WEBHOOK_URL"
-
-  notify-deploy:
-    if: >-
-      github.event_name == 'deployment_status' &&
-      github.event.deployment_status.state == 'success' &&
-      github.event.deployment.environment == 'Production'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify Discord (Deploy)
-        env:
-          DISCORD_DEPLOY_WEBHOOK_URL: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
-        run: |
-          curl -H "Content-Type: application/json" \
-            -d "{
-              \"embeds\": [{
-                \"title\": \"🚀 デプロイ完了 (Production)\",
-                \"url\": \"${{ github.event.deployment_status.environment_url }}\",
-                \"description\": \"${{ github.event.deployment.ref }}\",
-                \"color\": 3066993,
-                \"footer\": {
-                  \"text\": \"${{ github.repository }}\"
-                }
-              }]
-            }" \
-            "$DISCORD_DEPLOY_WEBHOOK_URL"

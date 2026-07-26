@@ -36,3 +36,48 @@ jobs:
           wranglerVersion: "4.114.0"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Vercel 時代は deployment_status イベントで discord-notify.yml が通知していたが、
+      # Cloudflare では発火しないため、このワークフロー自身から通知する。
+      # 記事タイトルが commit メッセージに入る（引用符・改行・日本語を含みうる）ので、
+      # 文字列連結ではなく jq で JSON を組み立てること。
+      - name: Notify Discord (成功)
+        if: success()
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          REPO: ${{ github.repository }}
+        run: |
+          jq -n \
+            --arg desc "${COMMIT_MSG:-手動実行}" \
+            --arg repo "$REPO" \
+            '{embeds:[{
+              title: "🚀 デプロイ完了 (Production)",
+              url: "https://www.kechiiiiin.com/",
+              description: $desc,
+              color: 3066993,
+              footer: {text: $repo}
+            }]}' \
+          | curl -sS -H "Content-Type: application/json" -d @- "$WEBHOOK"
+
+      - name: Notify Discord (失敗)
+        if: failure()
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          jq -n \
+            --arg desc "${COMMIT_MSG:-手動実行}" \
+            --arg url "$RUN_URL" \
+            --arg repo "$REPO" \
+            '{embeds:[{
+              title: "❌ デプロイ失敗",
+              url: $url,
+              description: ($desc + "\n\nログを確認してください"),
+              color: 15158332,
+              footer: {text: $repo}
+            }]}' \
+          | curl -sS -H "Content-Type: application/json" -d @- "$WEBHOOK"
