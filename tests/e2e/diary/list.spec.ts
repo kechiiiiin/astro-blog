@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-// 一覧カードのリンク。DiaryPreview / PreviewCard は
-// <a href="/diary/YYYY/MM/DD"><article>…<h2>タイトル</h2>…</article></a> という構造なので、
-// `article a`（記事の「中」のリンク）ではなく、記事を包むアンカー自体を掴む必要がある。
-const ENTRY_CARD_LINK = 'section a[href^="/diary/"]:has(h2)';
+// 一覧カードのリンク。DiaryPreview / PreviewCard は stretched link パターンで、
+// <article><h2><a href="/diary/YYYY/MM/DD">タイトル</a></h2>…</article> という構造。
+// タイトルのアンカーの ::after がカード全面に広がり、カードのどこでもクリックできる。
+const ENTRY_CARD_LINK = 'section article h2 > a[href^="/diary/"]';
 
 test.describe('日記一覧ページ', () => {
   test('日記一覧が表示される', async ({ page }) => {
@@ -24,7 +24,8 @@ test.describe('日記一覧ページ', () => {
     await expect(firstEntryLink).toBeVisible();
 
     const expectedHref = await firstEntryLink.getAttribute('href');
-    const expectedTitle = (await firstEntryLink.locator('h2').innerText()).trim();
+    // タイトルは h2 の中身＝このアンカーのテキストそのもの
+    const expectedTitle = (await firstEntryLink.innerText()).trim();
     expect(expectedHref).toMatch(/^\/diary\/\d{4}\/\d{2}\/\d{2}$/);
     expect(expectedTitle).not.toBe('');
 

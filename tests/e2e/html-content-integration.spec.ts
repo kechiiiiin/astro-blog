@@ -103,10 +103,10 @@ test.describe('HTMLコンテンツ統合テスト', () => {
     test('format:html 記事のHTMLが正しく表示される', async ({ page }) => {
       await page.goto('/blog');
 
-      // 一覧カードのリンク（記事タイトル h2 を含むアンカー）。
-      // カード内にタグリンク（入れ子の <a>）があるため、`article a` では
-      // 空のアンカー断片やタグリンクを掴んでしまう。
-      const firstArticle = page.locator('section a[href^="/blog/"]:has(h2)').first();
+      // 一覧カードのリンク（記事タイトル h2 の中のアンカー）。
+      // PreviewCard は stretched link パターンで、タイトルのアンカーがカード全面の
+      // クリック領域を担う。`article a` ではタグリンクを掴んでしまうため h2 配下に限定する。
+      const firstArticle = page.locator('section article h2 > a[href^="/blog/"]').first();
       await expect(firstArticle).toBeVisible();
       await firstArticle.click();
       await expect(page).toHaveURL(/\/blog\/[a-z0-9_-]+/i);

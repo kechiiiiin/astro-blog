@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-// 一覧カードのリンク。EmoniclePreview / PreviewCard は
-// <a href="/emonicle/xxx"><article>…<h2>タイトル</h2>…</article></a> という構造なので、
-// `article a`（記事の「中」のリンク）ではなく、記事を包むアンカー自体を掴む必要がある。
-const ARTICLE_CARD_LINK = 'section a[href^="/emonicle/"]:has(h2)';
+// 一覧カードのリンク。EmoniclePreview / PreviewCard は stretched link パターンで、
+// <article><h2><a href="/emonicle/xxx">タイトル</a></h2>…</article> という構造。
+// タイトルのアンカーの ::after がカード全面に広がり、カードのどこでもクリックできる。
+const ARTICLE_CARD_LINK = 'section article h2 > a[href^="/emonicle/"]';
 
 // Pagination.astro の pageSize（[...page].astro の paginate 設定と揃える）
 const PAGE_SIZE = 10;
@@ -23,7 +23,8 @@ test.describe('Emonicle一覧ページ', () => {
     await expect(firstArticle).toBeVisible();
 
     const expectedHref = await firstArticle.getAttribute('href');
-    const expectedTitle = (await firstArticle.locator('h2').innerText()).trim();
+    // タイトルは h2 の中身＝このアンカーのテキストそのもの
+    const expectedTitle = (await firstArticle.innerText()).trim();
     expect(expectedHref).toMatch(/^\/emonicle\/[a-z0-9_-]+$/i);
     expect(expectedTitle).not.toBe('');
 

@@ -14,35 +14,58 @@ const imageWidth = 800;
 const imageHeight = 400;
 ---
 
-<a href={href} class="block">
-  <article class:list={[
-    "p-6 bg-gray-50 dark:bg-gray-800/60 rounded-xl",
-    "shadow-md hover:shadow-xl dark:shadow-gray-700/30",
-    "dark:hover:shadow-2xl dark:hover:shadow-primary-500/20",
-    "border border-gray-700 dark:border-gray-500/50",
-    "transition-all duration-200",
-    { "mb-12": showMarginBottom }
-  ]}>
-    {image && (
-      <div class="mb-4">
-        <Image
-          src={image}
-          alt={title}
-          width={imageWidth}
-          height={imageHeight}
-          decoding="async"
-          loading="eager"
-          class="w-full h-48 object-cover rounded-lg shadow-md hover:shadow-lg transition-shadow"
-        />
-      </div>
-    )}
-    <header>
-      <h2 class="text-xl font-bold mb-2 text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400">
-        {title}
-      </h2>
-      <slot name="meta" />
-    </header>
-    <slot name="content" />
-    <slot name="footer" />
-  </article>
-</a>
+{/*
+  カードは「stretched link」パターンで組む。
+  カード全体を <a> で包むと、スロットに差し込まれたリンク（PostTags のタグリンク等）が
+  <a> の入れ子になり不正な HTML となるため、リンクはタイトルにだけ置き、
+  その ::after をカード全面に広げてクリック領域を確保する。
+  スロット内のリンクは preview-card の :global 指定で z 軸方向に手前へ出し、
+  カードのリンク面より優先してクリックできるようにしている。
+*/}
+<article class:list={[
+  "preview-card group relative",
+  "p-6 bg-gray-50 dark:bg-gray-800/60 rounded-xl",
+  "shadow-md hover:shadow-xl dark:shadow-gray-700/30",
+  "dark:hover:shadow-2xl dark:hover:shadow-primary-500/20",
+  "border border-gray-700 dark:border-gray-500/50",
+  "transition-all duration-200",
+  { "mb-12": showMarginBottom }
+]}>
+  {image && (
+    <div class="mb-4">
+      <Image
+        src={image}
+        alt={title}
+        width={imageWidth}
+        height={imageHeight}
+        decoding="async"
+        loading="eager"
+        class="w-full h-48 object-cover rounded-lg shadow-md hover:shadow-lg group-hover:shadow-lg transition-shadow"
+      />
+    </div>
+  )}
+  <header>
+    <h2 class="text-xl font-bold mb-2 text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400">
+      <a href={href} class="preview-card__link">{title}</a>
+    </h2>
+    <slot name="meta" />
+  </header>
+  <slot name="content" />
+  <slot name="footer" />
+</article>
+
+<style>
+  /* カード全面をタイトルリンクのクリック領域にする（stretched link） */
+  .preview-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  /* スロットに差し込まれたリンク（タグリンク等）はクリック面より手前に出す。
+     slot の中身はこのコンポーネントのスコープ外なので :global が必要。 */
+  .preview-card :global(a:not(.preview-card__link)) {
+    position: relative;
+    z-index: 1;
+  }
+</style>
