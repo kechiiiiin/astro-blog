@@ -4,7 +4,6 @@ import rehypePrettyCode from 'rehype-pretty-code';
 import { siteConfig } from './src/config';
 import mdx from '@astrojs/mdx';
 import embeds from 'astro-embed/integration';
-import vercel from '@astrojs/vercel';
 import sitemap from '@astrojs/sitemap';
 import preact from '@astrojs/preact';
 
@@ -21,7 +20,9 @@ import {
 export default defineConfig({
   site: siteConfig.site,
   output: 'static',
-  adapter: vercel(),
+  image: {
+    service: { entrypoint: 'astro/assets/services/sharp' },
+  },
   integrations: [
     tailwind(),
     preact({ compat: true }),
