@@ -1,0 +1,10 @@
+# Cloudflare Workers Static Assets のレスポンスヘッダ設定。
+# https://developers.cloudflare.com/workers/static-assets/headers/
+# public/ 配下は dist/ 直下へコピーされるため、ここに置けば配信時に効く。
+
+# Astro がビルドする資産はファイル名にコンテンツハッシュが入る
+# （例: archive.DWBH6IVz.css）。中身が変われば名前も変わるので、
+# 長期キャッシュして安全。既定の max-age=0 だとページ遷移のたびに
+# CSS/JS の再検証リクエストが往復していた。
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
