@@ -5,9 +5,20 @@ import { defineConfig, devices } from '@playwright/test';
  *
  * 特徴:
  * - ヘッド付きモード（ブラウザ表示）をデフォルトに設定
- * - Astro開発サーバーとの連携
+ * - ビルド済みの本番相当（astro build + astro preview）に対してテストする
  * - Vitestとの共存を考慮したディレクトリ構成
+ *
+ * 開発サーバー（astro dev）ではなく preview を使う理由:
+ * - astro dev は Dev Toolbar のUI（"No islands detected." 等の h1 を含む）を
+ *   ページに注入するため、`h1` のような素直なセレクタが strict mode 違反になる
+ * - 本番にデプロイされる成果物（dist/）そのものを検証できる
+ *
+ * ポートは開発サーバーの 4321 と衝突しないよう 4322 を使い、
+ * reuseExistingServer は無効にして「必ずビルド済み成果物を見る」ことを保証する。
  */
+const E2E_PORT = 4322;
+const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
+
 export default defineConfig({
   // テストファイルの配置場所
   testDir: './tests/e2e',
@@ -33,8 +44,8 @@ export default defineConfig({
 
   // テスト実行時の設定
   use: {
-    // ベースURL（開発サーバー）
-    baseURL: 'http://localhost:4321',
+    // ベースURL（ビルド済み成果物のプレビューサーバー）
+    baseURL: E2E_BASE_URL,
 
     // トレース記録（失敗時のみ）
     trace: 'on-first-retry',
@@ -71,11 +82,12 @@ export default defineConfig({
     // },
   ],
 
-  // Astro開発サーバーの自動起動
+  // ビルド + プレビューサーバーの自動起動（本番相当の成果物を検証する）
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:4321',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000, // 2分
+    command: `npm run build && npx astro preview --port ${E2E_PORT}`,
+    url: E2E_BASE_URL,
+    // 既存サーバーを流用しない（古い dist や dev サーバーを掴まないため）
+    reuseExistingServer: false,
+    timeout: 180 * 1000, // 3分（ビルド時間を含む）
   },
 });

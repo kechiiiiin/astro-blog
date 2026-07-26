@@ -103,8 +103,13 @@ test.describe('HTMLコンテンツ統合テスト', () => {
     test('format:html 記事のHTMLが正しく表示される', async ({ page }) => {
       await page.goto('/blog');
 
-      const firstArticle = page.locator('article a, .blog-preview a').first();
+      // 一覧カードのリンク（記事タイトル h2 を含むアンカー）。
+      // カード内にタグリンク（入れ子の <a>）があるため、`article a` では
+      // 空のアンカー断片やタグリンクを掴んでしまう。
+      const firstArticle = page.locator('section a[href^="/blog/"]:has(h2)').first();
+      await expect(firstArticle).toBeVisible();
       await firstArticle.click();
+      await expect(page).toHaveURL(/\/blog\/[a-z0-9_-]+/i);
 
       // コンテンツエリアが表示される
       const content = page.locator('article, .prose').first();
