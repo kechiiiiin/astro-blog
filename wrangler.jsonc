@@ -2,7 +2,13 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "astro-blog",
   "compatibility_date": "2026-07-26",
-  "assets": { "directory": "./dist" },
+  "assets": {
+    "directory": "./dist",
+    // 存在しないパスでは Astro が生成する dist/404.html を返す。
+    // 既定は "none" で、その場合は中身が空の 404 になる（Vercel は自動で
+    // 404.html を返していたため、移行時にこの挙動が失われていた）。
+    "not_found_handling": "404-page"
+  },
 
   // プレビュー URL（astro-blog.kechiiiiin.workers.dev）を維持する。
   // routes を書くと既定で無効化されるため明示的に有効化しておく。
