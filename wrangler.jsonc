@@ -2,5 +2,10 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "astro-blog",
   "compatibility_date": "2026-07-26",
-  "assets": { "directory": "./dist" }
+  "assets": { "directory": "./dist" },
+  // 本番ドメイン。Cloudflare が www の DNS レコードを Worker 型で管理する。
+  // 切り戻す場合は www を CNAME → cname.vercel-dns.com（プロキシ済み）に復元する。
+  "routes": [
+    { "pattern": "www.kechiiiiin.com", "custom_domain": true }
+  ]
 }
