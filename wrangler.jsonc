@@ -3,9 +3,18 @@
   "name": "astro-blog",
   "compatibility_date": "2026-07-26",
   "assets": { "directory": "./dist" },
-  // 本番ドメイン。Cloudflare が www の DNS レコードを Worker 型で管理する。
-  // 切り戻す場合は www を CNAME → cname.vercel-dns.com（プロキシ済み）に復元する。
+
+  // プレビュー URL（astro-blog.kechiiiiin.workers.dev）を維持する。
+  // routes を書くと既定で無効化されるため明示的に有効化しておく。
+  "workers_dev": true,
+
+  // 本番ドメイン。カスタムドメインではなく **Worker ルート** を使う。
+  //   理由: www は CNAME → cname.vercel-dns.com（プロキシ済み）のまま。
+  //   Cloudflare のエッジで Worker が先に応答するので Vercel には届かない。
+  //   カスタムドメイン方式は既存 DNS の削除を要求され、その間ダウンするため不採用
+  //   （実際に "already has externally managed DNS records" で拒否された）。
+  // 切り戻し: この routes を消して deploy すれば、DNS はそのままなので即 Vercel に戻る。
   "routes": [
-    { "pattern": "www.kechiiiiin.com", "custom_domain": true }
+    { "pattern": "www.kechiiiiin.com/*", "zone_name": "kechiiiiin.com" }
   ]
 }
