@@ -15,11 +15,13 @@
   "workers_dev": true,
 
   // 本番ドメイン。カスタムドメインではなく **Worker ルート** を使う。
-  //   理由: www は CNAME → cname.vercel-dns.com（プロキシ済み）のまま。
-  //   Cloudflare のエッジで Worker が先に応答するので Vercel には届かない。
+  //   経緯: 移行時、www は CNAME → cname.vercel-dns.com（プロキシ済み）のままだった。
   //   カスタムドメイン方式は既存 DNS の削除を要求され、その間ダウンするため不採用
   //   （実際に "already has externally managed DNS records" で拒否された）。
-  // 切り戻し: この routes を消して deploy すれば、DNS はそのままなので即 Vercel に戻る。
+  //   Worker ルートなら Cloudflare のエッジで先に応答するので、DNS を触らず移行できた。
+  // 2026-08-01: Vercel を廃止し、www も apex と同じ A 192.0.2.1（プロキシ済み）に変更。
+  //   この 192.0.2.1 は RFC 5737 のドキュメント用アドレスで、実際には接続されない。
+  //   ⚠️ 配信しているのはこの routes だけ。**消すとサイトが落ちる**（戻り先の Vercel はもう無い）。
   "routes": [
     { "pattern": "www.kechiiiiin.com/*", "zone_name": "kechiiiiin.com" }
   ]
