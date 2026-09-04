@@ -172,6 +172,50 @@ tests/
 - **microCMS は卒業済み**（2026-07）: 全記事を `format: html` の md として移行済み。API キーは削除済み。
   旧プレビュー機能（`/preview`・`src/lib/microcms.ts` など）は削除済み
 
+## 日記の X 自動投稿
+
+新しい日記エントリが main に push され、Cloudflare へのデプロイが成功すると、`.github/workflows/deploy.yml` の `Post new diary to X` ステップが `scripts/post-diary-to-x.mjs` を実行して X（Twitter）へ自動投稿する。
+
+- **投稿対象**: **最後に成功した deploy の commit**..`github.sha` の差分で **新規追加された** `src/content/diary/*.md` だけ。`update(diary):` / `delete(diary):` のコミットでは投稿しない（重複投稿の防止）
+- **起点が「直前の push」でない理由**: deploy は `cancel-in-progress` なので、create の直後に update が push されると1本目の run が取り消される。直前の push を起点にするとその日記が永遠に投稿されないため、`gh run list` で最後の成功 run の head を引いて起点にしている（取れなければ `github.event.before` にフォールバック）
+- **除外**: `draft: true` の記事、`pubDate` が JST で未来の記事。※未来日の記事は公開日を迎えても後から投稿されない（追加コミット時にしか走らないため。許容している制限）
+- **本文**: `日記を書きました「{title}」\n{url}`。URL は `pubDate` から JST で導出した `https://www.kechiiiiin.com/diary/YYYY/MM/DD`
+- **認証**: OAuth 1.0a user context（HMAC-SHA1）。`POST https://api.x.com/2/tweets`
+- **失敗時**: デプロイ自体は失敗させず（`continue-on-error: true`）、Discord に「⚠️ X への投稿に失敗」を通知する
+
+### シークレット
+
+X Developer Portal の App から取得した4つを GitHub Secrets に登録する。**App の権限は Read and write** にしておくこと（Read only だと 403 になる）。
+
+```bash
+gh secret set X_API_KEY --repo kechiiiiin/astro-blog
+gh secret set X_API_SECRET --repo kechiiiiin/astro-blog
+gh secret set X_ACCESS_TOKEN --repo kechiiiiin/astro-blog
+gh secret set X_ACCESS_TOKEN_SECRET --repo kechiiiiin/astro-blog
+```
+
+4つのうち1つでも未設定なら、スクリプトは `::notice::` を出して何もせず正常終了する（デプロイは通る）。
+
+### 費用
+
+X API は従量課金。**URL 付きの投稿は $0.20/件**（2026-02〜）。日記1本につき1投稿だが、課金が発生することは意識しておく。
+
+### 文言・挙動の変え方
+
+- **本文テンプレート**: `scripts/lib/x-post.mjs` の `POST_TEMPLATE` 定数（1箇所だけ）
+- **文字数上限**: 同ファイルの `MAX_WEIGHTED_LENGTH` / `URL_WEIGHT`。280 を超えるとタイトル側を `…` で切り詰める
+- 純粋関数は `scripts/lib/x-post.mjs`、git 差分取得と HTTP は `scripts/post-diary-to-x.mjs` に分けてある
+
+### ローカルでの確認
+
+`DRY_RUN=1` を付けると本文を組み立てて表示するだけで HTTP は投げない。
+
+```bash
+DRY_RUN=1 BEFORE_SHA=<親コミット> AFTER_SHA=<コミット> node scripts/post-diary-to-x.mjs
+```
+
+ユニットテストは `scripts/post-diary-to-x.test.ts`（`npm run test:run` に含まれる）。URL 生成が `src/utils/date.ts` の `getDiaryPath` と一致すること、OAuth 署名が X 公式ドキュメントのサンプルと一致することを検証している。
+
 ## コンテンツ構造
 
 ### ブログ記事（`src/content/blog/`）

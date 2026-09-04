@@ -14,8 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read   # 最後に成功した deploy run を gh run list で引くため
     steps:
       - uses: actions/checkout@v4
+        with:
+          # X 自動投稿が github.event.before..github.sha の差分を取るため、
+          # 既定の depth 1 では両端のコミットが揃わない。全履歴を取る
+          # （before だけを追加 fetch するより手数が少なく、壊れにくい）。
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -37,6 +43,55 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # 新しく追加された日記エントリを X（Twitter）へ自動投稿する。
+      #
+      # - 何をするか: 「最後に成功した deploy の commit」..github.sha の差分から「追加された」
+      #   src/content/diary/*.md だけを拾い、`日記を書きました「タイトル」+ URL` を投稿する。
+      #   update(diary): / delete(diary): のコミットでは何も投稿しない（重複防止）。
+      # - なぜ github.event.before ではなく「最後に成功した deploy」を起点にするか:
+      #   このワークフローは cancel-in-progress のため、CMS が create(diary) の直後に
+      #   update(diary) を push すると 1 本目の run が取り消される。before を起点にすると
+      #   2 本目の差分に「追加」が含まれず、その日記は永遠に投稿されない。
+      #   成功デプロイを起点にすれば、取り消し・失敗をまたいだ追加もまとめて拾える。
+      #   （「削除→再追加」は diff-filter=A に出ないが稀なので許容）
+      # - 必要なシークレット（4つ・OAuth 1.0a user context）:
+      #     X_API_KEY / X_API_SECRET / X_ACCESS_TOKEN / X_ACCESS_TOKEN_SECRET
+      # - 費用: X API は従量課金。URL 付き投稿は $0.20/件（2026-02〜）。
+      #   日記1本につき1投稿しか出ないが、課金が発生することは意識しておくこと。
+      # - シークレットが1つでも未設定なら ::notice:: を出して黙ってスキップする（exit 0）。
+      # - continue-on-error: 投稿の失敗でデプロイ自体を失敗にはしない。代わりに下の
+      #   Discord 通知で気付けるようにしている。
+      - name: Find last successful deploy commit
+        id: last-deploy
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FALLBACK: ${{ github.event.before }}
+          CURRENT: ${{ github.sha }}
+        run: |
+          sha="$(gh run list --workflow deploy.yml --branch main --status success --limit 5 \
+                  --json headSha -q '.[].headSha' 2>/dev/null \
+                | grep -v "^${CURRENT}$" | head -n1 || true)"
+          if [ -z "$sha" ]; then
+            echo "::notice::最後に成功した deploy が見つからないため github.event.before を起点にします"
+            sha="$FALLBACK"
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "起点: $sha"
+
+      - name: Post new diary to X
+        id: x-post
+        if: success() && github.event_name == 'push'
+        continue-on-error: true
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          BEFORE_SHA: ${{ steps.last-deploy.outputs.sha }}
+          AFTER_SHA: ${{ github.sha }}
+        run: node scripts/post-diary-to-x.mjs
+
       # Vercel 時代は deployment_status イベントで discord-notify.yml が通知していたが、
       # Cloudflare では発火しないため、このワークフロー自身から通知する。
       # 記事タイトルが commit メッセージに入る（引用符・改行・日本語を含みうる）ので、
@@ -57,6 +112,28 @@ jobs:
               url: "https://www.kechiiiiin.com/",
               description: $desc,
               color: 3066993,
+              footer: {text: $repo}
+            }]}' \
+          | curl -sS -H "Content-Type: application/json" -d @- "$WEBHOOK"
+
+      # X 投稿だけが失敗したケース（デプロイは成功している）を知らせる。
+      - name: Notify Discord (X 投稿失敗)
+        if: steps.x-post.outcome == 'failure'
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          jq -n \
+            --arg desc "${COMMIT_MSG:-手動実行}" \
+            --arg url "$RUN_URL" \
+            --arg repo "$REPO" \
+            '{embeds:[{
+              title: "⚠️ X への投稿に失敗",
+              url: $url,
+              description: ($desc + "\n\nデプロイは成功しています。ログを確認してください"),
+              color: 16098851,
               footer: {text: $repo}
             }]}' \
           | curl -sS -H "Content-Type: application/json" -d @- "$WEBHOOK"
