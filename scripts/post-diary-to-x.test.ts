@@ -59,7 +59,7 @@ describe('parseFrontmatter', () => {
   });
 });
 
-describe('getDiaryPath（src/utils/date.ts と一致すること）', () => {
+describe('getDiaryPath（src/utils/date.ts と一致し、末尾スラッシュ付きであること）', () => {
   const cases = [
     '2026-07-29T12:47:00.000Z', // JST 21:47 → 同日
     '2026-07-29T15:30:00.000Z', // JST 翌 00:30 → 日付が繰り上がる
@@ -72,13 +72,13 @@ describe('getDiaryPath（src/utils/date.ts と一致すること）', () => {
   for (const iso of cases) {
     it(`${iso}`, () => {
       const d = new Date(iso);
-      expect(getDiaryPath(d)).toBe(getDiaryPathTs(d));
+      expect(getDiaryPath(d)).toBe(getDiaryPathTs(d) + '/');
     });
   }
 
   it('UTC 日付境界をまたぐケースが期待どおり', () => {
-    expect(getDiaryPath(new Date('2026-07-29T15:30:00.000Z'))).toBe('/diary/2026/07/30');
-    expect(getDiaryPath(new Date('2026-12-31T15:00:00.000Z'))).toBe('/diary/2027/01/01');
+    expect(getDiaryPath(new Date('2026-07-29T15:30:00.000Z'))).toBe('/diary/2026/07/30/');
+    expect(getDiaryPath(new Date('2026-12-31T15:00:00.000Z'))).toBe('/diary/2027/01/01/');
   });
 });
 
@@ -98,15 +98,15 @@ describe('isPublished', () => {
 
 describe('composeText', () => {
   it('テンプレートどおりに組み立てる（タイトルは載せない）', () => {
-    const text = composeText('GitHubアカウントを移行した', 'https://www.kechiiiiin.com/diary/2026/07/29');
-    expect(text).toBe('日記投稿\nhttps://www.kechiiiiin.com/diary/2026/07/29');
+    const text = composeText('GitHubアカウントを移行した', 'https://www.kechiiiiin.com/diary/2026/07/29/');
+    expect(text).toBe('日記投稿\nhttps://www.kechiiiiin.com/diary/2026/07/29/');
     expect(text).toBe(
-      POST_TEMPLATE('GitHubアカウントを移行した', 'https://www.kechiiiiin.com/diary/2026/07/29')
+      POST_TEMPLATE('GitHubアカウントを移行した', 'https://www.kechiiiiin.com/diary/2026/07/29/')
     );
   });
 
   it('タイトルが長くても本文は 280 に収まる', () => {
-    const url = 'https://www.kechiiiiin.com/diary/2026/07/29';
+    const url = 'https://www.kechiiiiin.com/diary/2026/07/29/';
     const text = composeText('あ'.repeat(500), url);
     const weighted = [...text].length - [...url].length + 23;
     expect(weighted).toBeLessThanOrEqual(280);

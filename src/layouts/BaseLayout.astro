@@ -14,7 +14,9 @@ interface Props {
 }
 
 const { title, description = siteConfig.description, image, ogType = 'website', maxWidth = 'md', noindex = false } = Astro.props
-const ogImage = image ?? `${siteConfig.site}icon.png`
+// 既定の OGP 画像。icon.png はほぼ正方形で twitter:card=summary_large_image（2:1 前提）と
+// 相性が悪く X のカードで画像が落ちたため、1200x630 に配置し直した og-default.png を使う（2026-09-04）。
+const ogImage = image ?? `${siteConfig.site}og-default.png`
 const currentUrl = Astro.url.href
 
 const maxWidthClass = {
@@ -60,6 +62,8 @@ const maxWidthClass = {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
+    {!image && <meta property="og:image:width" content="1200" />}
+    {!image && <meta property="og:image:height" content="630" />}
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />

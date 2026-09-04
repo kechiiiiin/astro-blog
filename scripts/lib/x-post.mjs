@@ -97,7 +97,8 @@ export function getJstDateParts(date) {
 /** 公開 URL のパス。src/utils/date.ts の getDiaryPath と一致すること。 */
 export function getDiaryPath(date) {
   const { year, month, day } = getJstDateParts(date);
-  return `/diary/${year}/${month}/${day}`;
+  // 末尾スラッシュ付き。無いと 307 リダイレクトを挟むので、X のクローラに直接届く形にしておく
+  return `/diary/${year}/${month}/${day}/`;
 }
 
 /**
