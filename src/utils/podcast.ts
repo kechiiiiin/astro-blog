@@ -12,6 +12,11 @@ export const PODCAST_CONFIGS: PodcastConfig[] = [
     rssUrl: 'https://rss.listen.style/p/itsumaji-radio/rss',
     linkText: 'LISTENで聴く',
   },
+  {
+    label: '山、それから。',
+    rssUrl: 'https://rss.listen.style/p/yamasore/rss',
+    linkText: 'LISTENで聴く',
+  },
 ];
 
 export async function fetchPodcastFeed(rssUrl: string): Promise<PodcastFeed> {
