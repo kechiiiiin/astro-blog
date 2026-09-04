@@ -51,7 +51,7 @@ jobs:
       # 新しく追加された日記エントリを X（Twitter）へ自動投稿する。
       #
       # - 何をするか: 「最後に成功した deploy の commit」..github.sha の差分から「追加された」
-      #   src/content/diary/*.md だけを拾い、`日記投稿 + URL` を投稿する。
+      #   src/content/diary/*.md だけを拾い、`日記 + URL` を投稿する。
       #   update(diary): / delete(diary): のコミットでは何も投稿しない（重複防止）。
       # - なぜ github.event.before ではなく「最後に成功した deploy」を起点にするか:
       #   このワークフローは cancel-in-progress のため、CMS が create(diary) の直後に

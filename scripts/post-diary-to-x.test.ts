@@ -99,7 +99,7 @@ describe('isPublished', () => {
 describe('composeText', () => {
   it('テンプレートどおりに組み立てる（タイトルは載せない）', () => {
     const text = composeText('GitHubアカウントを移行した', 'https://www.kechiiiiin.com/diary/2026/07/29/');
-    expect(text).toBe('日記投稿\nhttps://www.kechiiiiin.com/diary/2026/07/29/');
+    expect(text).toBe('日記\nhttps://www.kechiiiiin.com/diary/2026/07/29/');
     expect(text).toBe(
       POST_TEMPLATE('GitHubアカウントを移行した', 'https://www.kechiiiiin.com/diary/2026/07/29/')
     );

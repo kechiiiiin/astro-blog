@@ -14,12 +14,10 @@ interface Props {
 }
 
 const { title, description = siteConfig.description, image, ogType = 'website', maxWidth = 'md', noindex = false } = Astro.props
-// 既定の OGP 画像（Discord / Slack / Facebook 等向け・横長 1200x630）。
-const ogImage = image ?? `${siteConfig.site}og-default.png`
-// X（Twitter）は summary 型カード（左に正方形サムネ＋右にタイトル・説明）にする。
-// summary_large_image だと画像が全面に出て Keisuke のイメージと違った（2026-09-04）。
-// summary 型は正方形が正解なので、X 向けだけ og-square.png を渡す。
-const twitterImage = image ?? `${siteConfig.site}og-square.png`
+// 既定の OGP 画像は正方形（og-square.png・800x800・白地にアイコン）。
+// X は summary 型カード（左に正方形サムネ＋右にタイトル・説明）。summary_large_image だと
+// 画像が全面に出て Keisuke のイメージと違った（2026-09-04）。横長版は不要とのことで廃止。
+const ogImage = image ?? `${siteConfig.site}og-square.png`
 const currentUrl = Astro.url.href
 
 const maxWidthClass = {
@@ -65,15 +63,13 @@ const maxWidthClass = {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
-    {!image && <meta property="og:image:width" content="1200" />}
-    {!image && <meta property="og:image:height" content="630" />}
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
     <meta property="twitter:url" content={currentUrl} />
     <meta property="twitter:title" content={title} />
     <meta property="twitter:description" content={description} />
-    <meta name="twitter:image" content={twitterImage} />
+    <meta name="twitter:image" content={ogImage} />
 
     <!-- Twitter Widget JavaScript -->
     <script async src="https://platform.twitter.com/widgets.js"></script>

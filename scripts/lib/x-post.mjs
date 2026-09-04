@@ -11,7 +11,7 @@ import { createHmac } from 'node:crypto';
 /** 投稿本文のテンプレート。文言を変えたいときはここだけ直す。
  *  2026-09-04: Keisuke の希望でタイトルを載せず「日記投稿 + URL」だけにした。
  *  title は引数として残してあるので、載せたくなったら `${title}` を足すだけでよい。 */
-export const POST_TEMPLATE = (title, url) => `日記投稿\n${url}`;
+export const POST_TEMPLATE = (title, url) => `日記\n${url}`;
 
 /** X の上限。URL は t.co に短縮されるため実長に関わらず 23 文字として数える。 */
 export const MAX_WEIGHTED_LENGTH = 280;
