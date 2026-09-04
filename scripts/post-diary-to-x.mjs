@@ -9,6 +9,7 @@
 //   X_API_KEY / X_API_SECRET / X_ACCESS_TOKEN / X_ACCESS_TOKEN_SECRET  … OAuth 1.0a user context
 //   BEFORE_SHA / AFTER_SHA … 差分の範囲（push イベントの github.event.before / github.sha）
 //   SITE_URL   … 省略時 https://www.kechiiiiin.com
+//   FORCE_FILE … 指定すると差分を見ずにそのファイルだけ投稿する（再投稿用・BEFORE_SHA 不要）
 //   DRY_RUN=1  … 本文を組み立てて表示するだけで HTTP は投げない
 
 import { randomBytes } from 'node:crypto';
@@ -33,6 +34,7 @@ const {
   AFTER_SHA = '',
   SITE_URL = 'https://www.kechiiiiin.com',
   DRY_RUN = '',
+  FORCE_FILE = '',
 } = process.env;
 
 const dryRun = DRY_RUN === '1';
@@ -62,34 +64,9 @@ async function main() {
     return 0;
   }
 
-  // 初回 push や workflow_dispatch では before が空／全ゼロになり差分が取れない
-  if (!BEFORE_SHA || /^0+$/.test(BEFORE_SHA)) {
-    notice('X への投稿をスキップしました（BEFORE_SHA が無いため差分を取得できません）');
-    return 0;
-  }
-  if (!AFTER_SHA) {
-    notice('X への投稿をスキップしました（AFTER_SHA が未設定）');
-    return 0;
-  }
-
-  const diffOut = git([
-    'diff',
-    '--diff-filter=A',
-    '--name-only',
-    BEFORE_SHA,
-    AFTER_SHA,
-    '--',
-    DIARY_DIR,
-  ]);
-  if (diffOut === null) {
-    error(`git diff に失敗しました（${BEFORE_SHA}..${AFTER_SHA}）。fetch-depth を確認してください`);
-    return 1;
-  }
-
-  const added = diffOut
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.endsWith('.md'));
+  const added = FORCE_FILE ? [FORCE_FILE.trim()] : await listAddedDiaries();
+  if (added === null) return 1;
+  if (FORCE_FILE) notice(`FORCE_FILE 指定のため ${FORCE_FILE} を投稿します`);
 
   if (added.length === 0) {
     notice('新規の日記エントリはありませんでした（X への投稿なし）');
@@ -100,9 +77,9 @@ async function main() {
 
   for (const path of added) {
     // 範囲内で追加後に削除された場合など、AFTER 時点に存在しないものは飛ばす
-    const raw = git(['show', `${AFTER_SHA}:${path}`]);
+    const raw = git(['show', `${AFTER_SHA || 'HEAD'}:${path}`]);
     if (raw === null) {
-      notice(`${path} は ${AFTER_SHA} 時点に存在しないためスキップします`);
+      notice(`${path} は ${AFTER_SHA || 'HEAD'} 時点に存在しないためスキップします`);
       continue;
     }
 
@@ -136,6 +113,41 @@ async function main() {
   }
 
   return (await postAll(posts)) ? 0 : 1;
+}
+
+/**
+ * BEFORE_SHA..AFTER_SHA で追加された日記ファイル一覧。
+ * 差分が取れない状況（初回 push 等）は [] を、git 自体の失敗は null を返す。
+ */
+async function listAddedDiaries() {
+  // 初回 push や workflow_dispatch では before が空／全ゼロになり差分が取れない
+  if (!BEFORE_SHA || /^0+$/.test(BEFORE_SHA)) {
+    notice('X への投稿をスキップしました（BEFORE_SHA が無いため差分を取得できません）');
+    return [];
+  }
+  if (!AFTER_SHA) {
+    notice('X への投稿をスキップしました（AFTER_SHA が未設定）');
+    return [];
+  }
+
+  const diffOut = git([
+    'diff',
+    '--diff-filter=A',
+    '--name-only',
+    BEFORE_SHA,
+    AFTER_SHA,
+    '--',
+    DIARY_DIR,
+  ]);
+  if (diffOut === null) {
+    error(`git diff に失敗しました（${BEFORE_SHA}..${AFTER_SHA}）。fetch-depth を確認してください`);
+    return null;
+  }
+
+  return diffOut
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.endsWith('.md'));
 }
 
 /** 組み立てた本文を順に投稿する。1件でも失敗したら全件試したうえで exit 1。 */

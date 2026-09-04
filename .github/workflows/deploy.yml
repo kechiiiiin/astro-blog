@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      x_post_file:
+        description: "X へ投稿し直す日記ファイル（例: src/content/diary/2026-09-04.md）。空なら通常デプロイのみ"
+        required: false
+        default: ""
 
 concurrency:
   group: deploy-cloudflare
@@ -79,11 +84,15 @@ jobs:
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "起点: $sha"
 
+      # workflow_dispatch で x_post_file を指定すると、差分に関係なくそのファイルだけ投稿する
+      # （クレジット切れ等で投稿だけ失敗した回の再投稿用。差分の「起点」は成功デプロイなので
+      #   自動では二度と拾われない）。
       - name: Post new diary to X
         id: x-post
-        if: success() && github.event_name == 'push'
+        if: success() && (github.event_name == 'push' || inputs.x_post_file != '')
         continue-on-error: true
         env:
+          FORCE_FILE: ${{ inputs.x_post_file }}
           X_API_KEY: ${{ secrets.X_API_KEY }}
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
