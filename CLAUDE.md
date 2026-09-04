@@ -206,6 +206,14 @@ X API は従量課金。**URL 付きの投稿は $0.20/件**（2026-02〜）。�
 - **文字数上限**: 同ファイルの `MAX_WEIGHTED_LENGTH` / `URL_WEIGHT`。280 を超えるとタイトル側を `…` で切り詰める
 - 純粋関数は `scripts/lib/x-post.mjs`、git 差分取得と HTTP は `scripts/post-diary-to-x.mjs` に分けてある
 
+### 投稿だけ失敗した回の再投稿
+
+差分の起点は「最後に成功した deploy」なので、投稿だけ失敗した日記（クレジット切れ等）は自動では二度と拾われない。`workflow_dispatch` の `x_post_file` で指定して投稿し直す。
+
+```bash
+gh workflow run deploy.yml -f x_post_file=src/content/diary/2026-09-04.md
+```
+
 ### ローカルでの確認
 
 `DRY_RUN=1` を付けると本文を組み立てて表示するだけで HTTP は投げない。
