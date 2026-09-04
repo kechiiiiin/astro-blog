@@ -14,9 +14,12 @@ interface Props {
 }
 
 const { title, description = siteConfig.description, image, ogType = 'website', maxWidth = 'md', noindex = false } = Astro.props
-// 既定の OGP 画像。icon.png はほぼ正方形で twitter:card=summary_large_image（2:1 前提）と
-// 相性が悪く X のカードで画像が落ちたため、1200x630 に配置し直した og-default.png を使う（2026-09-04）。
+// 既定の OGP 画像（Discord / Slack / Facebook 等向け・横長 1200x630）。
 const ogImage = image ?? `${siteConfig.site}og-default.png`
+// X（Twitter）は summary 型カード（左に正方形サムネ＋右にタイトル・説明）にする。
+// summary_large_image だと画像が全面に出て Keisuke のイメージと違った（2026-09-04）。
+// summary 型は正方形が正解なので、X 向けだけ og-square.png を渡す。
+const twitterImage = image ?? `${siteConfig.site}og-square.png`
 const currentUrl = Astro.url.href
 
 const maxWidthClass = {
@@ -66,11 +69,11 @@ const maxWidthClass = {
     {!image && <meta property="og:image:height" content="630" />}
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="summary" />
     <meta property="twitter:url" content={currentUrl} />
     <meta property="twitter:title" content={title} />
     <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={ogImage} />
+    <meta name="twitter:image" content={twitterImage} />
 
     <!-- Twitter Widget JavaScript -->
     <script async src="https://platform.twitter.com/widgets.js"></script>
