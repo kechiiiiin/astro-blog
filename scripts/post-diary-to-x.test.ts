@@ -97,32 +97,19 @@ describe('isPublished', () => {
 });
 
 describe('composeText', () => {
-  it('テンプレートどおりに組み立てる', () => {
+  it('テンプレートどおりに組み立てる（タイトルは載せない）', () => {
     const text = composeText('GitHubアカウントを移行した', 'https://www.kechiiiiin.com/diary/2026/07/29');
-    expect(text).toBe(
-      '日記を書きました「GitHubアカウントを移行した」\nhttps://www.kechiiiiin.com/diary/2026/07/29'
-    );
+    expect(text).toBe('日記投稿\nhttps://www.kechiiiiin.com/diary/2026/07/29');
     expect(text).toBe(
       POST_TEMPLATE('GitHubアカウントを移行した', 'https://www.kechiiiiin.com/diary/2026/07/29')
     );
   });
 
-  it('長すぎるタイトルは「…」で切り詰めて 280 に収める', () => {
+  it('タイトルが長くても本文は 280 に収まる', () => {
     const url = 'https://www.kechiiiiin.com/diary/2026/07/29';
     const text = composeText('あ'.repeat(500), url);
-    // URL を 23 文字として数えた重み
     const weighted = [...text].length - [...url].length + 23;
     expect(weighted).toBeLessThanOrEqual(280);
-    expect(weighted).toBe(280);
-    expect(text).toContain('…」\n');
-  });
-
-  it('ちょうど収まる長さは切り詰めない', () => {
-    const url = 'https://www.kechiiiiin.com/diary/2026/07/29';
-    // 固定部 11 + URL 23 = 34 → タイトルは 246 文字まで
-    const title = 'あ'.repeat(246);
-    expect(composeText(title, url)).toContain(title);
-    expect(composeText(title, url)).not.toContain('…');
   });
 });
 

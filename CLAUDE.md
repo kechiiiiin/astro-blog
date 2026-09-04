@@ -179,7 +179,7 @@ tests/
 - **投稿対象**: **最後に成功した deploy の commit**..`github.sha` の差分で **新規追加された** `src/content/diary/*.md` だけ。`update(diary):` / `delete(diary):` のコミットでは投稿しない（重複投稿の防止）
 - **起点が「直前の push」でない理由**: deploy は `cancel-in-progress` なので、create の直後に update が push されると1本目の run が取り消される。直前の push を起点にするとその日記が永遠に投稿されないため、`gh run list` で最後の成功 run の head を引いて起点にしている（取れなければ `github.event.before` にフォールバック）
 - **除外**: `draft: true` の記事、`pubDate` が JST で未来の記事。※未来日の記事は公開日を迎えても後から投稿されない（追加コミット時にしか走らないため。許容している制限）
-- **本文**: `日記を書きました「{title}」\n{url}`。URL は `pubDate` から JST で導出した `https://www.kechiiiiin.com/diary/YYYY/MM/DD`
+- **本文**: `日記投稿\n{url}`（タイトルは載せない・2026-09-04 の希望）。URL は `pubDate` から JST で導出した `https://www.kechiiiiin.com/diary/YYYY/MM/DD`
 - **認証**: OAuth 1.0a user context（HMAC-SHA1）。`POST https://api.x.com/2/tweets`
 - **失敗時**: デプロイ自体は失敗させず（`continue-on-error: true`）、Discord に「⚠️ X への投稿に失敗」を通知する
 
