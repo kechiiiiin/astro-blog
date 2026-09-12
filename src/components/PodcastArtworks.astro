@@ -1,0 +1,34 @@
+---
+import { fetchAllPodcastFeeds } from '../utils/podcast';
+
+const allFeeds = await fetchAllPodcastFeeds();
+---
+
+<div class="not-prose my-8 py-6 border-t border-b border-gray-200 dark:border-gray-700">
+  <h2 class="mb-4 text-xl font-bold text-gray-900 dark:text-white">ポッドキャスト</h2>
+  <ul class="flex flex-wrap gap-4 list-none p-0 m-0">
+    {allFeeds.map(({ config, feed }) => (
+      feed.channel.image && (
+        <li class="m-0 p-0">
+          <a
+            href={feed.channel.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="block w-28 group"
+            title={config.label}
+          >
+            <img
+              src={feed.channel.image}
+              alt={config.label}
+              loading="lazy"
+              class="w-28 h-28 rounded-lg object-cover shadow-sm transition-transform duration-200 group-hover:scale-105"
+            />
+            <span class="mt-2 block text-xs text-gray-600 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">
+              {config.label}
+            </span>
+          </a>
+        </li>
+      )
+    ))}
+  </ul>
+</div>
