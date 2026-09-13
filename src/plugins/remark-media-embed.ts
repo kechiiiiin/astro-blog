@@ -2,6 +2,12 @@ import type { Root, Paragraph, Link, PhrasingContent, RootContent } from 'mdast'
 import type { Parent } from 'unist';
 import { visit, SKIP } from 'unist-util-visit';
 
+// ⚠️⚠️ 下の判別（正規表現と「行として独立した URL だけ」という条件）は、
+//   `~/work/kakera-cho/src/lib/markdown.ts`（かけら帳）
+// に **写し** があります。**どちらかを直したら、必ずもう一方も同じように直してください。**
+// かけら帳の画面は「ここで公開したらこう見える」のプレビューなので、判別が食い違うとプレビューの意味が無くなる。
+// npm パッケージにして共有しないのは、この規模に釣り合わないため（2026-09-13 決定。3つ目のアプリが出たら見直す）。
+// Spotify（remark-spotify-embed.ts）はかけら帳側が未対応で、そこだけ意図的に食い違っている。
 // youtu.be/ID, watch?v=ID, shorts/ID, live/ID, embed/ID（si= 等のクエリは無視）
 const YOUTUBE_PATTERN =
   /^https:\/\/(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/))([A-Za-z0-9_-]{11})/;
