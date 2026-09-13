@@ -21,16 +21,16 @@ jobs:
       contents: read
       actions: read   # 最後に成功した deploy run を gh run list で引くため
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # X 自動投稿が github.event.before..github.sha の差分を取るため、
           # 既定の depth 1 では両端のコミットが揃わない。全履歴を取る
           # （before だけを追加 fetch するより手数が少なく、壊れにくい）。
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -40,7 +40,7 @@ jobs:
         run: npm run build
 
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           # 既定は wrangler 3 系。assets 専用 Worker（main なし）は 4 系が必要。
           # package.json の devDependencies.wrangler と揃えること。
