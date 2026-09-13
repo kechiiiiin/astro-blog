@@ -58,10 +58,4 @@ const preview = Boolean(entry.data.draft) || !isPublished(entry.data.date);
   :global(.microcms-content p:has(> br:only-child)) {
     min-height: 1em;
   }
-
-  /* iframely埋め込みの上下マージン */
-  :global(.microcms-content .iframely-embed) {
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
 </style>
