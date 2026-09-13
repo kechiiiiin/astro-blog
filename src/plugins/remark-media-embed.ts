@@ -1,6 +1,7 @@
-import type { Root, Paragraph, Link, PhrasingContent, RootContent } from 'mdast';
+import type { Root, Paragraph, RootContent } from 'mdast';
 import type { Parent } from 'unist';
 import { visit, SKIP } from 'unist-util-visit';
+import { isAutolinkLiteral, isLineStandalone, trimBoundary } from './lib/standalone-link';
 
 // ⚠️⚠️ 下の判別（正規表現と「行として独立した URL だけ」という条件）は、
 //   `~/work/kakera-cho/src/lib/markdown.ts`（かけら帳）
@@ -9,9 +10,10 @@ import { visit, SKIP } from 'unist-util-visit';
 // npm パッケージにして共有しないのは、この規模に釣り合わないため（2026-09-13 決定。3つ目のアプリが出たら見直す）。
 // Spotify（remark-spotify-embed.ts）はかけら帳側が未対応で、そこだけ意図的に食い違っている。
 // youtu.be/ID, watch?v=ID, shorts/ID, live/ID, embed/ID（si= 等のクエリは無視）
-const YOUTUBE_PATTERN =
+// remark-link-card が「埋め込み対象はカードにしない」判定に使うので export している。
+export const YOUTUBE_PATTERN =
   /^https:\/\/(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/))([A-Za-z0-9_-]{11})/;
-const TWEET_PATTERN =
+export const TWEET_PATTERN =
   /^https:\/\/(?:x\.com|(?:mobile\.)?twitter\.com)\/[A-Za-z0-9_]+\/status\/\d+/;
 
 /** URL を埋め込み HTML に変換。対象外なら null。 */
@@ -29,39 +31,7 @@ function toEmbedHtml(url: string): string | null {
   return null;
 }
 
-/** 子 text 1個で value===url の GFM autolink literal か。 */
-function isAutolinkLiteral(node: PhrasingContent): node is Link {
-  if (node.type !== 'link') return false;
-  const link = node as Link;
-  return (
-    link.children.length === 1 &&
-    link.children[0].type === 'text' &&
-    (link.children[0] as { value: string }).value === link.url
-  );
-}
-
-/** その link が段落内で「行として独立」しているか（前後が段落端 or 改行境界）。 */
-function isLineStandalone(children: PhrasingContent[], i: number): boolean {
-  const prev = children[i - 1];
-  const next = children[i + 1];
-  const prevOk = i === 0 || (prev.type === 'text' && (prev as { value: string }).value.endsWith('\n'));
-  const nextOk =
-    i === children.length - 1 || (next.type === 'text' && (next as { value: string }).value.startsWith('\n'));
-  return prevOk && nextOk;
-}
-
-/** 境界 text の余分な `\n` を1個だけ削る（remarkBreaksForDiary の孤立 <br> 防止）。空になった text は捨てる。 */
-function trimBoundary(children: PhrasingContent[], side: 'end' | 'start'): PhrasingContent[] {
-  if (children.length === 0) return children;
-  const idx = side === 'end' ? children.length - 1 : 0;
-  const node = children[idx];
-  if (node.type === 'text') {
-    const t = node as { value: string };
-    t.value = side === 'end' ? t.value.replace(/\n$/, '') : t.value.replace(/^\n/, '');
-    if (t.value === '') return children.filter((_, k) => k !== idx);
-  }
-  return children;
-}
+// isAutolinkLiteral / isLineStandalone / trimBoundary は remark-link-card と共有するため lib/standalone-link.ts に移した（中身は同じ）。
 
 /**
  * .md 記事中の X / YouTube の生 URL を埋め込みに変換する remark プラグイン。

@@ -2,7 +2,8 @@ import type { Root, Paragraph, Link } from 'mdast';
 import type { Parent } from 'unist';
 import { visit } from 'unist-util-visit';
 
-const SPOTIFY_PATTERN =
+// remark-link-card が「埋め込み対象はカードにしない」判定に使うので export している。
+export const SPOTIFY_PATTERN =
   /^https:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/([a-zA-Z0-9]+)/;
 
 /**

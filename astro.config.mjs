@@ -12,6 +12,7 @@ import {
   remarkBreaksForDiary,
   remarkSpotifyEmbed,
   remarkMediaEmbed,
+  remarkLinkCard,
   rehypeTargetBlank,
   rehypeCodeTitle,
   rehypeImageNotProse,
@@ -41,7 +42,8 @@ export default defineConfig({
     mdx()
   ],
   markdown: {
-    remarkPlugins: [remarkBlankLines, remarkSpotifyEmbed, remarkMediaEmbed, remarkBreaksForDiary],
+    // remarkLinkCard は埋め込み（Spotify / X / YouTube）の後・remarkBreaksForDiary の前（リンクカード設計 §7.3）
+    remarkPlugins: [remarkBlankLines, remarkSpotifyEmbed, remarkMediaEmbed, remarkLinkCard, remarkBreaksForDiary],
     rehypePlugins: [
       [rehypePrettyCode, {
         theme: {
