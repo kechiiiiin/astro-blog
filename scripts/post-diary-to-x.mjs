@@ -133,6 +133,9 @@ async function listAddedDiaries() {
     return [];
   }
 
+  // ⚠️ A の判定は git の既定の rename 検出に頼っている（似た中身の改名は R になり A に出ない）。
+  // 本文が大きく変わった改名は A に出るので、下の excludeMovedDiaries で移動を除く。
+  // ここに --no-renames は付けない（rename 検出も再投稿を防ぐ一段なので）。
   const diffOut = git([
     'diff',
     '--diff-filter=A',

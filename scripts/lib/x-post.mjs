@@ -121,11 +121,18 @@ export function isPublished(date, now = new Date()) {
  *
  * 判定: その日記を追加した commit（範囲内で最後のもの）が、同じ commit で別の日記を消しており、
  * 消された日記が起点（最後に成功したデプロイ）の時点で既にあった → 公開済みの日記の移動とみなす。
+ * 消された日記が起点に無くても、それ自身が範囲内で「移動として」足されたものなら辿って遡る
+ * （デプロイ前に 18→17→16 と2回移したとき、16 を 18 の移動と見抜く）。
  * - かけら帳の「日付を変える」は旧削除＋新追加を 1 commit で積む（move(diary): …）
  * - GitHub の画面で改名したときも 1 commit になる
  * - 起点にまだ無かった日記（未デプロイのうちに作って移した）は、まだ投稿していないので投稿する
  * 判定に必要な git が読めなかったものは、二重投稿を避けて投稿しない（unknown に入れる。
  * 本当に新しい日記なら workflow_dispatch の x_post_file で投稿し直せる）。
+ *
+ * ⚠️ 「追加された」の一覧（呼び手の git diff --diff-filter=A）は git の既定の rename 検出に頼っている。
+ *   中身が似ていれば改名は R になって A に出ない（それも再投稿を防ぐ一段になっている）が、
+ *   本文が大きく変わると A に出る。ここはその A を拾う側なので rename 検出の有無に依らず正しく判定する。
+ *   一覧の git diff に --no-renames は付けない（守りを一段減らすだけ）。
  *
  * @param {string[]} added 追加された日記のパス
  * @param {{
@@ -140,25 +147,34 @@ export function excludeMovedDiaries(added, git) {
   const moved = [];
   const unknown = [];
   for (const path of added) {
-    const sha = git.addingCommit(path);
-    if (sha === null) {
-      unknown.push(path);
-      continue;
-    }
-    if (sha === undefined) {
-      post.push(path);
-      continue;
-    }
-    const deleted = git.deletedDiariesIn(sha);
-    if (deleted === null) {
-      unknown.push(path);
-      continue;
-    }
-    const from = deleted.find((d) => d !== path && git.existedAtBase(d));
-    if (from) moved.push({ path, from });
+    const r = traceMove(path, git, new Set([path]));
+    if (r === 'unknown') unknown.push(path);
+    else if (r) moved.push({ path, from: r });
     else post.push(path);
   }
   return { post, moved, unknown };
+}
+
+/**
+ * path を足した commit が消した日記を辿り、起点にあった日記に行き着けばそのパスを返す。
+ * 行き着かなければ null、git が読めなければ 'unknown'。
+ */
+function traceMove(path, git, seen) {
+  const sha = git.addingCommit(path);
+  if (sha === null) return 'unknown';
+  if (sha === undefined) return null;
+  const deleted = git.deletedDiariesIn(sha);
+  if (deleted === null) return 'unknown';
+  let sawUnknown = false;
+  for (const d of deleted) {
+    if (d === path || seen.has(d)) continue;
+    if (git.existedAtBase(d)) return d;
+    seen.add(d);
+    const r = traceMove(d, git, seen);
+    if (r === 'unknown') sawUnknown = true;
+    else if (r) return r;
+  }
+  return sawUnknown ? 'unknown' : null;
 }
 
 // ---------------------------------------------------------------------------
