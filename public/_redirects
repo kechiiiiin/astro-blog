@@ -1,0 +1,4 @@
+# 日記の日付を変えたときの転送（旧 URL → 新 URL）。かけら帳が日付を変えるたびに書き足す。
+# Workers Static Assets の _redirects。https://developers.cloudflare.com/workers/static-assets/redirects/
+/diary/2026/09/18 /diary/2026/09/17/ 301
+/diary/2026/09/18/ /diary/2026/09/17/ 301

@@ -4,6 +4,8 @@
 // GitHub Actions の deploy ワークフローから、デプロイ成功後に呼ばれる。
 // BEFORE_SHA..AFTER_SHA の差分で「追加された」日記ファイルだけを拾うので、
 // update(diary): / delete(diary): のコミットでは何も投稿しない（重複投稿の防止）。
+// 日付を変えただけの日記（同じ commit で公開済みの日記を消して足したもの）も投稿しない
+// （excludeMovedDiaries。かけら帳の move(diary): や GitHub の画面での改名）。
 //
 // 必要な環境変数:
 //   X_API_KEY / X_API_SECRET / X_ACCESS_TOKEN / X_ACCESS_TOKEN_SECRET  … OAuth 1.0a user context
@@ -20,6 +22,7 @@ import {
   isPublished,
   composeText,
   buildAuthHeader,
+  excludeMovedDiaries,
 } from './lib/x-post.mjs';
 
 const X_TWEETS_ENDPOINT = 'https://api.x.com/2/tweets';
@@ -144,10 +147,33 @@ async function listAddedDiaries() {
     return null;
   }
 
-  return diffOut
+  const added = diffOut
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.endsWith('.md'));
+
+  const { post, moved, unknown } = excludeMovedDiaries(added, {
+    addingCommit: (path) => {
+      const out = git(['log', '--no-renames', '--diff-filter=A', '--format=%H', `${BEFORE_SHA}..${AFTER_SHA}`, '--', path]);
+      if (out === null) return null;
+      return out.split('\n').map((l) => l.trim()).find(Boolean);
+    },
+    deletedDiariesIn: (sha) => {
+      const out = git(['show', '--no-renames', '--name-status', '--format=', sha, '--', DIARY_DIR]);
+      if (out === null) return null;
+      return out
+        .split('\n')
+        .map((l) => l.split('\t'))
+        .filter(([status, p]) => status === 'D' && p?.endsWith('.md'))
+        .map(([, p]) => p);
+    },
+    existedAtBase: (path) => git(['cat-file', '-e', `${BEFORE_SHA}:${path}`]) !== null,
+  });
+  for (const m of moved) notice(`${m.path} は ${m.from} から日付を変えただけなので X には投稿しません`);
+  for (const p of unknown) {
+    error(`${p} が移動かどうか git で確かめられなかったため投稿しません（新しい日記なら x_post_file で投稿し直してください）`);
+  }
+  return post;
 }
 
 /** 組み立てた本文を順に投稿する。1件でも失敗したら全件試したうえで exit 1。 */

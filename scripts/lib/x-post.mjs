@@ -113,6 +113,55 @@ export function isPublished(date, now = new Date()) {
 }
 
 // ---------------------------------------------------------------------------
+// 日付を変えた（移した）日記を「追加」から外す
+// ---------------------------------------------------------------------------
+
+/**
+ * 追加された日記のうち、**日付を変えただけのもの**を除く（X に同じ日記を二度投稿しない）。
+ *
+ * 判定: その日記を追加した commit（範囲内で最後のもの）が、同じ commit で別の日記を消しており、
+ * 消された日記が起点（最後に成功したデプロイ）の時点で既にあった → 公開済みの日記の移動とみなす。
+ * - かけら帳の「日付を変える」は旧削除＋新追加を 1 commit で積む（move(diary): …）
+ * - GitHub の画面で改名したときも 1 commit になる
+ * - 起点にまだ無かった日記（未デプロイのうちに作って移した）は、まだ投稿していないので投稿する
+ * 判定に必要な git が読めなかったものは、二重投稿を避けて投稿しない（unknown に入れる。
+ * 本当に新しい日記なら workflow_dispatch の x_post_file で投稿し直せる）。
+ *
+ * @param {string[]} added 追加された日記のパス
+ * @param {{
+ *   addingCommit: (path: string) => string | null | undefined,   // null=読めない / undefined=見つからない
+ *   deletedDiariesIn: (sha: string) => string[] | null,
+ *   existedAtBase: (path: string) => boolean,
+ * }} git
+ * @returns {{ post: string[], moved: { path: string, from: string }[], unknown: string[] }}
+ */
+export function excludeMovedDiaries(added, git) {
+  const post = [];
+  const moved = [];
+  const unknown = [];
+  for (const path of added) {
+    const sha = git.addingCommit(path);
+    if (sha === null) {
+      unknown.push(path);
+      continue;
+    }
+    if (sha === undefined) {
+      post.push(path);
+      continue;
+    }
+    const deleted = git.deletedDiariesIn(sha);
+    if (deleted === null) {
+      unknown.push(path);
+      continue;
+    }
+    const from = deleted.find((d) => d !== path && git.existedAtBase(d));
+    if (from) moved.push({ path, from });
+    else post.push(path);
+  }
+  return { post, moved, unknown };
+}
+
+// ---------------------------------------------------------------------------
 // OAuth 1.0a（HMAC-SHA1・user context）
 // ---------------------------------------------------------------------------
 

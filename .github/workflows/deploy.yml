@@ -53,6 +53,8 @@ jobs:
       # - 何をするか: 「最後に成功した deploy の commit」..github.sha の差分から「追加された」
       #   src/content/diary/*.md だけを拾い、`日記 + URL` を投稿する。
       #   update(diary): / delete(diary): のコミットでは何も投稿しない（重複防止）。
+      #   日付を変えただけの日記（同じ commit で公開済みの日記を消して足したもの＝かけら帳の
+      #   move(diary): や GitHub 画面での改名）も投稿しない。旧 URL は public/_redirects で転送する。
       # - なぜ github.event.before ではなく「最後に成功した deploy」を起点にするか:
       #   このワークフローは cancel-in-progress のため、CMS が create(diary) の直後に
       #   update(diary) を push すると 1 本目の run が取り消される。before を起点にすると

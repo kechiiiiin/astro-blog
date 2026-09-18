@@ -9,6 +9,7 @@ import {
   buildSignatureBaseString,
   signRequest,
   buildAuthHeader,
+  excludeMovedDiaries,
 } from './lib/x-post.mjs';
 import { getDiaryPath as getDiaryPathTs } from '../src/utils/date';
 
@@ -201,5 +202,38 @@ describe('OAuth 1.0a', () => {
     expect(header).toMatch(/^OAuth oauth_consumer_key="ck", /);
     expect(header).toContain('oauth_signature=');
     expect(header).toContain('oauth_signature_method="HMAC-SHA1"');
+  });
+});
+
+describe('excludeMovedDiaries（日付を変えただけの日記を X に投稿しない）', () => {
+  const D = (d: string) => `src/content/diary/${d}.md`;
+  const base = new Set([D('2026-09-18'), D('2026-09-01')]);
+  const make = (commits: Record<string, string | null | undefined>, deleted: Record<string, string[] | null>) => ({
+    addingCommit: (p: string) => commits[p],
+    deletedDiariesIn: (sha: string) => (sha in deleted ? deleted[sha]! : []),
+    existedAtBase: (p: string) => base.has(p),
+  });
+
+  it('同じ commit で公開済みの日記を消して足したもの（移動）は投稿しない', () => {
+    const r = excludeMovedDiaries([D('2026-09-17')], make({ [D('2026-09-17')]: 'm1' }, { m1: [D('2026-09-18')] }));
+    expect(r).toEqual({ post: [], moved: [{ path: D('2026-09-17'), from: D('2026-09-18') }], unknown: [] });
+  });
+
+  it('何も消していない追加（新しい日記）は投稿する', () => {
+    const r = excludeMovedDiaries([D('2026-09-19')], make({ [D('2026-09-19')]: 'c1' }, { c1: [] }));
+    expect(r.post).toEqual([D('2026-09-19')]);
+  });
+
+  it('まだデプロイされていない日記を移したもの（未投稿）は投稿する', () => {
+    const r = excludeMovedDiaries([D('2026-09-15')], make({ [D('2026-09-15')]: 'm2' }, { m2: [D('2026-09-16')] }));
+    expect(r.post).toEqual([D('2026-09-15')]);
+  });
+
+  it('git が読めなければ投稿しない（二重投稿を避ける）', () => {
+    const r = excludeMovedDiaries(
+      [D('2026-09-19'), D('2026-09-20')],
+      make({ [D('2026-09-19')]: null, [D('2026-09-20')]: 'c2' }, { c2: null })
+    );
+    expect(r).toEqual({ post: [], moved: [], unknown: [D('2026-09-19'), D('2026-09-20')] });
   });
 });
