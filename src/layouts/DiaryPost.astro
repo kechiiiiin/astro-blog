@@ -2,7 +2,7 @@
 import BaseLayout from './BaseLayout.astro'
 import ArticleContent from '../components/ArticleContent.astro';
 import type { UnifiedDiaryEntry } from '../lib/content'
-import { formatDate } from '../utils/date';
+import { getDateParts } from '../utils/date';
 
 interface Props {
   entry: UnifiedDiaryEntry
@@ -10,8 +10,15 @@ interface Props {
 }
 
 const { entry, preview = false } = Astro.props
-const { title, description, date, weather, condition, image } = entry.data
+// weather / condition / ヘッダー写真は「かたち」モックの見た目に合わせて出さない
+// （2026-09-22 diary デザイン実装。og:image 等のメタは image をそのまま使うので heroImage 自体は残す）。
+const { title, description, date, image } = entry.data
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+const { year, month, day } = getDateParts(date);
+const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+const weekday = WEEKDAYS[new Date(`${year}-${month}-${day}T00:00:00`).getDay()]!;
+const dateSmall = `${year}-${month}-${day} (${weekday})`;
 ---
 
 <BaseLayout title={title} description={description} image={image} ogType="article" noindex={preview}>
@@ -21,29 +28,18 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
         下書きプレビュー — このページは一覧・RSS・検索には表示されません
       </div>
     )}
-    {image && <img src={image} alt={title} class="w-full h-[400px] object-cover rounded-xl shadow-lg mb-8" loading="eager" />}
-    <header class="mb-12">
-      <h1 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-        {title}
-      </h1>
-      <div class="flex flex-col sm:flex-row gap-2 sm:gap-6 text-gray-600 dark:text-gray-300">
-        <div class="flex items-center">
-          <span class="font-semibold mr-2 min-w-[2.5em]">日付:</span>
-          <span>{formatDate(date)}</span>
+    <div class="diary-katachi">
+      <div class="diary-frame">
+        <div class="back-row">
+          <a class="back-btn" href="/diary/">‹ 一覧へ戻る</a>
         </div>
-        {weather && <div class="flex items-center">
-          <span class="font-semibold mr-2 min-w-[2.5em]">天気:</span>
-          <span>{weather}</span>
-        </div>}
-        {condition && <div class="flex items-center">
-          <span class="font-semibold mr-2 min-w-[2.5em]">調子:</span>
-          <span>{condition}</span>
-        </div>}
+        <p class="read-date-small">{dateSmall}</p>
+        <h1 class="page-date">{title}</h1>
+        <ArticleContent class="diary-content" url={canonicalURL.href} title={title}>
+          <slot />
+        </ArticleContent>
       </div>
-    </header>
-    <ArticleContent class="diary-content" url={canonicalURL.href} title={title}>
-      <slot />
-    </ArticleContent>
+    </div>
   </article>
 </BaseLayout>
 
@@ -57,5 +53,149 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   :global(.diary-content .prose li ol) {
     margin-top: 0;
     margin-bottom: 0;
+  }
+
+  /* ============================================================
+     「かたち」の見た目（かけら帳 kakera-cho/src/components/ReadScreen.tsx・
+     src/styles/app.css 準拠）。diary 専用スコープ（.diary-katachi 配下）だけに掛け、
+     blog / emonicle など他ページの共通 CSS（ArticleContent.astro の .prose / .link-card 既定）
+     には触れない。ライトのみ：dark: バリアントを持たせない。
+     ============================================================ */
+  .diary-katachi {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #8f8b7f;
+    --line: #ece8e0;
+    --accent: #b03a2e;
+    --serif: "Hiragino Mincho ProN", "Yu Mincho", serif;
+    background: var(--bg);
+    color: var(--fg);
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27140%27%20height%3D%27140%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.9%27%20numOctaves%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27140%27%20height%3D%27140%27%20filter%3D%27url%28%2523n%29%27%20opacity%3D%270.005%27%2F%3E%3C%2Fsvg%3E");
+    background-size: 140px 140px;
+  }
+  .diary-frame {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 12px 0 60px;
+  }
+  .back-row {
+    margin-bottom: 18px;
+  }
+  .back-btn {
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 8px 0;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+  }
+  .read-date-small {
+    font-family: var(--serif);
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 6px;
+    letter-spacing: 0.02em;
+  }
+  .page-date {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    color: var(--fg);
+    padding-bottom: 16px;
+    margin: 0 0 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* prose のリセット。Tailwind Typography は :where() でゼロ specificity なので、
+     こちらの単純なクラスセレクタで確実に上書きできる。 */
+  :global(.diary-content) {
+    font-family: var(--serif);
+    color: var(--fg);
+    max-width: none;
+  }
+  :global(.diary-content p) {
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.9;
+    color: var(--fg);
+    margin: 0 0 1.5em;
+    overflow-wrap: anywhere;
+  }
+  :global(.diary-content p:last-child) {
+    margin-bottom: 0;
+  }
+  :global(.diary-content strong) {
+    font-weight: 700;
+  }
+  :global(.diary-content em) {
+    font-style: italic;
+  }
+  :global(.diary-content a) {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  :global(.diary-content code) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.92em;
+    background: var(--line);
+    border-radius: 2px;
+    padding: 0 4px;
+    color: var(--fg);
+  }
+
+  /* 画像（1枚だけの段落は余白を持たせない。写真自体で余白を作る） */
+  :global(.diary-content p:has(> img:only-child)) {
+    margin: 1.6em 0;
+  }
+  :global(.diary-content img) {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 2px;
+    background: #f1efea;
+    margin: 0;
+  }
+
+  /* `---` を波線の区切りに（かけら帳の read-frag 区切りと同じ見た目） */
+  :global(.diary-content hr) {
+    border: none;
+    height: 12px;
+    margin: 2.4em auto;
+    background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20300%2012%27%20preserveAspectRatio%3D%27none%27%3E%3Cpath%20d%3D%27M4%2C7.4C34%2C4.2%2C58%2C9.2%2C88%2C6.6C118%2C4%2C142%2C9.4%2C172%2C6.8C202%2C4.2%2C226%2C8.8%2C256%2C6.4C272%2C5.1%2C284%2C7.0%2C296%2C5.6%27%20fill%3D%27none%27%20stroke%3D%27%23b3ac9d%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%2F%3E%3C%2Fsvg%3E") center/100% 12px no-repeat;
+    opacity: 0.75;
+  }
+
+  /* リンクカード（左80pxサムネ＋ドメイン→タイトル→説明）。
+     ArticleContent.astro の :global(.link-card*) 既定（ブログのグレー配色）を diary だけ上書きする。 */
+  :global(.diary-content .link-card) {
+    border-color: var(--line);
+    color: var(--fg);
+    font-family: var(--serif);
+    margin: 1.6em 0;
+  }
+  :global(.diary-content .link-card:hover) {
+    border-color: var(--muted);
+  }
+  :global(.diary-content .link-card-thumb) {
+    background: #f1efea;
+    color: #b9b4a9;
+  }
+  :global(.diary-content .link-card-site) {
+    font-family: var(--serif);
+    color: var(--muted);
+  }
+  :global(.diary-content .link-card-title) {
+    color: var(--fg);
+  }
+  :global(.diary-content .link-card-desc) {
+    color: var(--muted);
   }
 </style>

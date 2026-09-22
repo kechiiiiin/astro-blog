@@ -1,0 +1,29 @@
+---
+// diary 一覧の1行（「かたち一覧」の day-row 見た目・かけら帳 KatachiListScreen 準拠）。
+// diary 専用コンポーネント。DiaryPreview.astro（index.astro / heisei.astro で使用）とは別物として新設し、
+// 既存ページの見た目に影響しないようにする。
+interface Props {
+  href: string;
+  title: string;
+  dateSmall: string;
+  desc?: string;
+  image?: string;
+}
+
+const { href, title, dateSmall, desc, image } = Astro.props;
+---
+
+<a class="day-row" href={href}>
+  <div class="day-left">
+    <div class="day-title">{title}</div>
+    <div class="day-meta">
+      <span class="day-date-small">{dateSmall}</span>
+    </div>
+    {desc && <div class="day-desc">{desc}</div>}
+  </div>
+  {image && (
+    <span class="row-thumb-wrap">
+      <img src={image} alt="" loading="lazy" />
+    </span>
+  )}
+</a>
