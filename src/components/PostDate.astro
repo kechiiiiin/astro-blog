@@ -1,11 +1,13 @@
 ---
-import { formatDate } from '../utils/date';
+import { formatDisplayDate } from '../utils/date';
 
 interface Props {
   date: Date;
+  class?: string;
 }
 
-const { date } = Astro.props;
+// 表示は formatDisplayDate（2026-09-21 (月)）に統一
+const { date, class: className } = Astro.props;
 
 // datetime 属性は表示（JST日付）と一致するよう +09:00 付き ISO で出す
 const jstIso = new Date(date.getTime() + 9 * 60 * 60 * 1000)
@@ -13,6 +15,6 @@ const jstIso = new Date(date.getTime() + 9 * 60 * 60 * 1000)
   .replace('Z', '+09:00');
 ---
 
-<time datetime={jstIso} class="text-gray-600">
-  {formatDate(date)}
+<time datetime={jstIso} class={className}>
+  {formatDisplayDate(date)}
 </time>

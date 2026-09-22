@@ -2,7 +2,7 @@
 import BaseLayout from './BaseLayout.astro'
 import ArticleContent from '../components/ArticleContent.astro';
 import type { UnifiedDiaryEntry } from '../lib/content'
-import { getDateParts } from '../utils/date';
+import { formatDisplayDate } from '../utils/date';
 
 interface Props {
   entry: UnifiedDiaryEntry
@@ -14,17 +14,13 @@ const { entry, preview = false } = Astro.props
 // （2026-09-22 diary デザイン実装。og:image 等のメタは image をそのまま使うので heroImage 自体は残す）。
 const { title, description, date, image } = entry.data
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-
-const { year, month, day } = getDateParts(date);
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
-const weekday = WEEKDAYS[new Date(`${year}-${month}-${day}T00:00:00`).getDay()]!;
-const dateSmall = `${year}-${month}-${day} (${weekday})`;
+const dateSmall = formatDisplayDate(date);
 ---
 
 <BaseLayout title={title} description={description} image={image} ogType="article" noindex={preview}>
-  <article class="max-w-3xl mx-auto px-4">
+  <article>
     {preview && (
-      <div class="mb-6 rounded-lg border border-amber-400 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+      <div class="preview-note">
         下書きプレビュー — このページは一覧・RSS・検索には表示されません
       </div>
     )}
@@ -61,22 +57,13 @@ const dateSmall = `${year}-${month}-${day} (${weekday})`;
      blog / emonicle など他ページの共通 CSS（ArticleContent.astro の .prose / .link-card 既定）
      には触れない。ライトのみ：dark: バリアントを持たせない。
      ============================================================ */
+  /* 色はサイト共通のトークン（src/styles/site.css の :root・墨＋オレンジの印）を使う。
+     2026-09 リニューアルで朱 #b03a2e と紙色の灰をやめ、墨にそろえた。 */
   .diary-katachi {
-    --bg: #ffffff;
-    --fg: #1a1a1a;
-    --muted: #8f8b7f;
-    --line: #ece8e0;
-    --accent: #b03a2e;
-    --serif: "Hiragino Mincho ProN", "Yu Mincho", serif;
-    background: var(--bg);
     color: var(--fg);
-    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27140%27%20height%3D%27140%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.9%27%20numOctaves%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27140%27%20height%3D%27140%27%20filter%3D%27url%28%2523n%29%27%20opacity%3D%270.005%27%2F%3E%3C%2Fsvg%3E");
-    background-size: 140px 140px;
   }
   .diary-frame {
-    max-width: 620px;
-    margin: 0 auto;
-    padding: 12px 0 60px;
+    padding: 0 0 20px;
   }
   .back-row {
     margin-bottom: 18px;
@@ -142,7 +129,7 @@ const dateSmall = `${year}-${month}-${day} (${weekday})`;
     font-style: italic;
   }
   :global(.diary-content a) {
-    color: var(--accent);
+    color: var(--link);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
@@ -164,7 +151,7 @@ const dateSmall = `${year}-${month}-${day} (${weekday})`;
     height: auto;
     display: block;
     border-radius: 2px;
-    background: #f1efea;
+    background: var(--soft);
     margin: 0;
   }
 
@@ -180,6 +167,7 @@ const dateSmall = `${year}-${month}-${day} (${weekday})`;
   /* リンクカード（左80pxサムネ＋ドメイン→タイトル→説明）。
      ArticleContent.astro の :global(.link-card*) 既定（ブログのグレー配色）を diary だけ上書きする。 */
   :global(.diary-content .link-card) {
+    text-decoration: none;
     border-color: var(--line);
     color: var(--fg);
     font-family: var(--serif);
@@ -189,8 +177,8 @@ const dateSmall = `${year}-${month}-${day} (${weekday})`;
     border-color: var(--muted);
   }
   :global(.diary-content .link-card-thumb) {
-    background: #f1efea;
-    color: #b9b4a9;
+    background: var(--soft);
+    color: var(--faint);
   }
   :global(.diary-content .link-card-site) {
     font-family: var(--serif);

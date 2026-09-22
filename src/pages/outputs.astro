@@ -7,15 +7,33 @@ if (!entry) throw new Error('outputs.md not found');
 const { Content } = await entry.render();
 ---
 
-<BaseLayout title="Outputs" maxWidth="xl">
-  <div class="prose prose-lg
-    prose-headings:text-gray-900
-    prose-p:text-gray-700
-    prose-a:text-blue-600
-    hover:prose-a:text-blue-500
-    prose-strong:text-gray-900
-    prose-li:text-gray-700
-    max-w-none">
+<BaseLayout title="Outputs">
+  <h1 class="page-title">Outputs</h1>
+  <div class="prose prose-lg max-w-none article-body outputs-body">
     <Content />
   </div>
 </BaseLayout>
+
+<style>
+  /* 本文の見出し（## 外部発信 など）を欄の頭と同じ「墨の太線＋濃い見出し」に */
+  .outputs-body :global(h2) {
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+    margin: 44px 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--fg);
+  }
+  .outputs-body :global(li) {
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  .outputs-body :global(li + li) {
+    margin-top: 6px;
+  }
+  .outputs-body :global(li li) {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 0;
+  }
+</style>

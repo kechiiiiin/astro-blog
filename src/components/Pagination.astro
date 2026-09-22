@@ -8,21 +8,14 @@ interface Props {
 const { currentPage, totalPages, baseUrl } = Astro.props;
 ---
 
-<nav class="flex justify-center gap-4 mt-12">
-  {currentPage > 1 && (
-    <a
-      href={currentPage === 2 ? baseUrl : `${baseUrl}${currentPage - 1}`}
-      class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
-    >
-      Previous
-    </a>
-  )}
-  {currentPage < totalPages && (
-    <a
-      href={`${baseUrl}${currentPage + 1}`}
-      class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
-    >
-      Next
-    </a>
-  )}
-</nav>
+{totalPages > 1 && (
+  <nav class="pager" aria-label="ページ送り">
+    {currentPage > 1 && (
+      <a href={currentPage === 2 ? baseUrl : `${baseUrl}${currentPage - 1}`}>‹ 新しい記事</a>
+    )}
+    <span class="pager-count">{currentPage} / {totalPages}</span>
+    {currentPage < totalPages && (
+      <a class="pager-next" href={`${baseUrl}${currentPage + 1}`}>古い記事 ›</a>
+    )}
+  </nav>
+)}

@@ -1,18 +1,23 @@
 ---
 interface Props {
   tags: string[];
+  /** chip = 記事の頭の枠付きタグ／inline = 一覧の行の右に「・」区切りで並べる */
+  variant?: 'chip' | 'inline';
 }
 
-const { tags } = Astro.props;
+const { tags, variant = 'chip' } = Astro.props;
 ---
 
-<div class="flex gap-2">
-  {tags.map((tag) => (
-    <a
-      href={`/tags/${tag}`}
-      class="text-sm px-3 py-1 text-primary-700 hover:text-primary-600 bg-gray-50 rounded-full hover:bg-gray-100"
-    >
-      #{tag}
-    </a>
-  ))}
-</div>
+{variant === 'chip' ? (
+  <div class="article-tags">
+    {tags.map((tag) => (
+      <a href={`/tags/${tag}`} class="tag-chip">{tag}</a>
+    ))}
+  </div>
+) : (
+  <span class="day-tags">
+    {tags.map((tag, i) => (
+      <>{i > 0 && '・'}<a href={`/tags/${tag}`}>{tag}</a></>
+    ))}
+  </span>
+)}

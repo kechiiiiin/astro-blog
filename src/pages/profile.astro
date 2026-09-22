@@ -8,20 +8,20 @@ const { Content } = await profileEntry.render();
 ---
 
 <BaseLayout title="Profile">
-  <h1 class="text-4xl font-bold mb-8 text-gray-900">Profile</h1>
+  <h1 class="page-title">Profile</h1>
 
-  <!-- Markdown content -->
-  <div class="bg-gray-100 rounded-lg p-6 prose prose-lg
-    prose-headings:text-gray-900
-    prose-p:text-gray-700
-    prose-a:text-blue-600
-    hover:prose-a:text-blue-500
-    prose-strong:text-gray-900
-    prose-code:text-gray-300
-    prose-blockquote:text-gray-700
-    prose-span:text-gray-700
-    prose-li:text-gray-700
-    max-w-none">
+  <div class="prose prose-lg max-w-none article-body profile-body">
     <Content />
   </div>
 </BaseLayout>
+
+<style>
+  .profile-body {
+    margin-top: 20px;
+  }
+  /* 写真は幅いっぱいにせず 360px まで（モックの .profile-photo） */
+  .profile-body :global(img) {
+    max-width: 360px;
+    margin: 0.6em 0 1.6em;
+  }
+</style>

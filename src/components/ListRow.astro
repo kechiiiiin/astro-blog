@@ -1,0 +1,40 @@
+---
+// 一覧の1行（日記一覧の day-row 意匠をサイト共通にしたもの）。
+// 行全体をタイトルのリンクでクリックできる stretched link。行の中のタグリンクは手前に出して
+// 独立してクリック・Tab 移動できる（<a> の入れ子にしない）。
+// 見た目は src/styles/site.css の .day-row 系。
+import PostTags from './PostTags.astro';
+import { formatDisplayDate } from '../utils/date';
+
+interface Props {
+  href: string;
+  title: string;
+  date: Date;
+  desc?: string;
+  tags?: string[];
+  image?: string;
+  /** 説明を日付の下の行に出す（日記一覧）。既定は日付の右に並べる（モックのブログ一覧） */
+  descBelow?: boolean;
+}
+
+const { href, title, date, desc, tags = [], image, descBelow = false } = Astro.props;
+
+const jstIso = new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().replace('Z', '+09:00');
+---
+
+<article class="day-row">
+  <div class="day-left">
+    <h2 class="day-title"><a href={href}>{title}</a></h2>
+    <div class="day-meta">
+      <time class="day-date-small" datetime={jstIso}>{formatDisplayDate(date)}</time>
+      {desc && !descBelow && <span class="day-desc">{desc}</span>}
+    </div>
+    {desc && descBelow && <div class="day-desc">{desc}</div>}
+  </div>
+  {tags.length > 0 && <PostTags tags={tags} variant="inline" />}
+  {image && (
+    <span class="row-thumb-wrap">
+      <img src={image} alt="" loading="lazy" />
+    </span>
+  )}
+</article>

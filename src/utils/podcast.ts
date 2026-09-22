@@ -55,14 +55,23 @@ export async function fetchPodcastFeed(rssUrl: string): Promise<PodcastFeed> {
   return { channel: podcastChannel, episodes };
 }
 
+// 1回のビルドの中ではトップ・Podcast ページで同じ RSS を使い回す（取得は番組ごとに1回）
+let allFeedsPromise: Promise<{ config: PodcastConfig; feed: PodcastFeed }[]> | null = null;
+
 export async function fetchAllPodcastFeeds(): Promise<{ config: PodcastConfig; feed: PodcastFeed }[]> {
-  const results = await Promise.all(
-    PODCAST_CONFIGS.map(async (config) => ({
-      config,
-      feed: await fetchPodcastFeed(config.rssUrl),
-    }))
-  );
-  return results;
+  if (!allFeedsPromise) {
+    allFeedsPromise = Promise.all(
+      PODCAST_CONFIGS.map(async (config) => ({
+        config,
+        feed: await fetchPodcastFeed(config.rssUrl),
+      }))
+    );
+    // 失敗したときは次の呼び出しで取り直せるようにする
+    allFeedsPromise.catch(() => {
+      allFeedsPromise = null;
+    });
+  }
+  return allFeedsPromise;
 }
 
 export function formatDuration(duration: string): string {

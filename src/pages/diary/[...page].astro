@@ -1,10 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import DiaryListRow from '../../components/DiaryListRow.astro';
+import ListRow from '../../components/ListRow.astro';
 import Pagination from '../../components/Pagination.astro';
 import { fetchAllDiaries } from '../../lib/content';
 import { sortDiariesByDate, filterPublishedDiaries } from '../../utils/posts';
-import { getDateParts } from '../../utils/date';
+import { getDateParts, getDiaryPath } from '../../utils/date';
 
 export async function getStaticPaths({ paginate }) {
   const entries = await fetchAllDiaries();
@@ -16,66 +16,42 @@ export async function getStaticPaths({ paginate }) {
 
 const { page } = Astro.props;
 
-// かけら帳 KatachiListScreen 準拠の見た目（月見出し＋日付行）。
-// diary 専用ロジックなのでこのページ内に閉じる（他ページの date/posts ユーティリティは変更しない）。
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
-function weekdayOf(year: string, month: string, day: string): string {
-  return WEEKDAYS[new Date(`${year}-${month}-${day}T00:00:00`).getDay()]!;
-}
+// かけら帳 KatachiListScreen 準拠の見た目（月見出し＋日付行）。行の意匠はサイト共通の ListRow。
 function monthHeading(year: string, month: string): string {
   return `${year}年${parseInt(month, 10)}月`;
 }
 
-interface Row {
-  key: string;
-  href: string;
-  title: string;
-  desc?: string;
-  dateSmall: string;
-  image?: string;
-}
-
-const groups: { heading: string; rows: Row[] }[] = [];
+const groups: { heading: string; entries: typeof page.data }[] = [];
 for (const entry of page.data) {
-  const { year, month, day } = getDateParts(entry.data.date);
+  const { year, month } = getDateParts(entry.data.date);
   const heading = monthHeading(year, month);
   let group = groups[groups.length - 1];
   if (!group || group.heading !== heading) {
-    group = { heading, rows: [] };
+    group = { heading, entries: [] };
     groups.push(group);
   }
-  group.rows.push({
-    key: `${year}-${month}-${day}`,
-    href: `/diary/${year}/${month}/${day}`,
-    title: entry.data.title,
-    desc: entry.data.description,
-    dateSmall: `${month}-${day} (${weekdayOf(year, month, day)})`,
-    image: entry.data.image,
-  });
+  group.entries.push(entry);
 }
 ---
 
 <BaseLayout title="Diary">
-  <div class="diary-katachi">
-    <div class="diary-frame">
-      <p class="page-date">日記</p>
+  <h1 class="page-title">日記</h1>
 
-      {groups.map((group) => (
-        <div>
-          <div class="month-head">{group.heading}</div>
-          {group.rows.map((row) => (
-            <DiaryListRow
-              href={row.href}
-              title={row.title}
-              dateSmall={row.dateSmall}
-              desc={row.desc}
-              image={row.image}
-            />
-          ))}
-        </div>
+  {groups.map((group, i) => (
+    <section>
+      <h2 class:list={['month-head', { 'is-first': i === 0 }]}>{group.heading}</h2>
+      {group.entries.map((entry) => (
+        <ListRow
+          href={getDiaryPath(entry.data.date)}
+          title={entry.data.title}
+          date={entry.data.date}
+          desc={entry.data.description}
+          image={entry.data.image}
+          descBelow
+        />
       ))}
-    </div>
-  </div>
+    </section>
+  ))}
 
   <Pagination
     currentPage={page.currentPage}
@@ -83,111 +59,3 @@ for (const entry of page.data) {
     baseUrl="/diary/"
   />
 </BaseLayout>
-
-<style>
-  /* 紙の地・明朝・朱ひとつだけ（かけら帳 kakera-cho/src/styles/app.css 準拠、diary 専用スコープ）。
-     ライトのみ： dark: バリアントを持たせず常にこの配色で組む。 */
-  .diary-katachi {
-    --bg: #ffffff;
-    --fg: #1a1a1a;
-    --muted: #8f8b7f;
-    --line: #ece8e0;
-    --accent: #b03a2e;
-    --serif: "Hiragino Mincho ProN", "Yu Mincho", serif;
-    background: var(--bg);
-    color: var(--fg);
-    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27140%27%20height%3D%27140%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.9%27%20numOctaves%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27140%27%20height%3D%27140%27%20filter%3D%27url%28%2523n%29%27%20opacity%3D%270.005%27%2F%3E%3C%2Fsvg%3E");
-    background-size: 140px 140px;
-  }
-  .diary-frame {
-    max-width: 620px;
-    margin: 0 auto;
-    padding: 12px 0 40px;
-  }
-  .page-date {
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: 30px;
-    color: var(--fg);
-    margin: 0 0 18px;
-  }
-  .month-head {
-    font-family: var(--serif);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    margin: 22px 0 6px;
-    letter-spacing: 0.04em;
-  }
-  .month-head:first-of-type {
-    margin-top: 0;
-  }
-  :global(.diary-katachi .day-row) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 13px 2px;
-    border-top: 1px solid var(--line);
-    min-height: 44px;
-    text-decoration: none;
-    color: inherit;
-  }
-  :global(.diary-katachi .day-left) {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    min-width: 0;
-    flex: 1;
-  }
-  :global(.diary-katachi .day-title) {
-    font-family: var(--serif);
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--fg);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  :global(.diary-katachi .day-meta) {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-  }
-  :global(.diary-katachi .day-date-small) {
-    font-family: var(--serif);
-    font-size: 13px;
-    color: var(--muted);
-  }
-  :global(.diary-katachi .day-desc) {
-    font-family: var(--serif);
-    font-size: 14px;
-    color: var(--muted);
-    margin-top: 1px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  :global(.diary-katachi .row-thumb-wrap) {
-    position: relative;
-    flex-shrink: 0;
-    align-self: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 2px;
-    overflow: hidden;
-    margin-left: 10px;
-    border: 1px solid var(--line);
-  }
-  :global(.diary-katachi .row-thumb-wrap img) {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  @media (max-width: 400px) {
-    .page-date {
-      font-size: 26px;
-    }
-  }
-</style>

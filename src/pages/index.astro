@@ -1,64 +1,91 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import BlogPreview from '../components/BlogPreview.astro'
-import DiaryPreview from '../components/DiaryPreview.astro'
-import SocialLinks from '../components/SocialLinks.astro'
-import { getEntry } from 'astro:content'
 import { fetchAllBlogs, fetchAllDiaries } from '../lib/content'
 import { filterPosts, filterDiaries } from '../utils/posts'
+import { fetchAllPodcastFeeds } from '../utils/podcast'
+import { formatDisplayDate, getDiaryPath } from '../utils/date'
 import { siteConfig } from '../config'
 
-const [posts, diaryEntries, homeContent] = await Promise.all([
+// トップは「いまの けちーん」が分かる入口（2026-09 リニューアル・モック準拠）。
+// 以前は src/content/home/index.mdx を描画していたが、紹介文・サイトマップはモックどおりここに置く
+// （index.mdx 自体は残してある。PodcastArtworks を import しているのでそちらも残す）。
+const [posts, diaryEntries] = await Promise.all([
   fetchAllBlogs(),
   fetchAllDiaries(),
-  getEntry('home', 'index'),
 ]);
 
-const { Content: HomeContent } = homeContent ? await homeContent.render() : { Content: null };
+const [latestDiary] = filterDiaries(diaryEntries, { maxEntries: 1 })
+const [latestPost] = filterPosts(posts, { maxPosts: 1 })
 
-// Configure homepage post filtering
-const homePagePosts = filterPosts(posts, {
-  ...siteConfig.homepage,
-})
+// ポッドキャストはビルド時に LISTEN の RSS から各番組の最新回を取る。
+// 取れなかったときはトップを落とさず、その番組の行を出さない（/podcasts 側は従来どおり）。
+let podcastLatest: { label: string; title: string; url: string; date: Date }[] = []
+try {
+  const feeds = await fetchAllPodcastFeeds()
+  podcastLatest = feeds.flatMap(({ config, feed }) => {
+    const ep = feed.episodes[0]
+    return ep ? [{ label: config.label, title: ep.title, url: ep.episodeUrl, date: ep.pubDate }] : []
+  })
+} catch (e) {
+  console.warn('[index] podcast RSS の取得に失敗したため「いま」から外します', e)
+}
 
-// Get latest diary entries
-const latestDiaryEntries = filterDiaries(diaryEntries, {
-  maxEntries: 5
-})
+const sitemap = [
+  { href: '/profile/', text: 'プロフィール', desc: '自己紹介' },
+  { href: '/diary/', text: '日記', desc: '日々の記録' },
+  { href: '/blog/', text: 'ブログ', desc: '技術記事や日記ではない文章' },
+  { href: '/podcasts/', text: 'Podcast', desc: 'いくつか配信中' },
+]
 ---
 
 <BaseLayout title={siteConfig.title}>
-  <div class="text-left mb-8">
-    <h1 class="text-2xl font-bold mb-4 text-gray-900">{siteConfig.slogan}</h1>
-    <SocialLinks />
-    <!-- <p class="text-xl mb-8 text-gray-600">{siteConfig.description}</p> -->
+  <h1 class="hero-name">けちーん</h1>
+  <p class="hero-sub">日記を書いたり、ブログを書いたり、自由に書いていくサイト。<br>普段はエンジニアリングマネージャー、休みの日は山登りとラジオ収録をしています。</p>
+  <div class="hero-links">
+    {siteConfig.social.x && (
+      <a href={siteConfig.social.x} target="_blank" rel="noopener noreferrer">X (@kechiiin_)</a>
+    )}
+    <a href="/profile/">プロフィール →</a>
   </div>
 
-  {HomeContent && (
-    <div class="prose max-w-none mb-12">
-      <HomeContent />
-    </div>
+  <h2 class="section-head is-first">いま</h2>
+
+  {latestDiary && (
+    <a class="now-row" href={getDiaryPath(latestDiary.data.date)}>
+      <div class="now-left">
+        <span class="now-tag">DIARY</span>
+        <span class="now-title">{latestDiary.data.title}</span>
+        {latestDiary.data.description && <span class="now-desc">{latestDiary.data.description}</span>}
+      </div>
+      <span class="now-date">{formatDisplayDate(latestDiary.data.date)}</span>
+    </a>
   )}
 
-  <!-- <div class="space-y-16">
-    <section>
-      <h2 class="text-2xl font-bold mb-6 text-gray-900">最新の日記</h2>
-      <div class="space-y-8">
-        {latestDiaryEntries.map((entry) => <DiaryPreview entry={entry} />)}
+  {latestPost && (
+    <a class="now-row" href={`/blog/${latestPost.id}`}>
+      <div class="now-left">
+        <span class="now-tag">BLOG</span>
+        <span class="now-title">{latestPost.data.title}</span>
+        {latestPost.data.description && <span class="now-desc">{latestPost.data.description}</span>}
       </div>
-      <div class="mt-4 text-right">
-        <a href="/diary/" class="text-primary-500 hover:text-primary-600 text-sm">もっとみる →</a>
-      </div>
-    </section>
+      <span class="now-date">{formatDisplayDate(latestPost.data.date)}</span>
+    </a>
+  )}
 
-    <section>
-      <h2 class="text-2xl font-bold mb-6 text-gray-900">最新のブログ</h2>
-      <div class="space-y-8">
-        {homePagePosts.map((post) => <BlogPreview post={post} />)}
+  {podcastLatest.map((ep) => (
+    <a class="now-row" href={ep.url} target="_blank" rel="noopener noreferrer">
+      <div class="now-left">
+        <span class="now-tag">PODCAST・{ep.label}</span>
+        <span class="now-title">{ep.title}</span>
       </div>
-      <div class="mt-4 text-right">
-        <a href="/blog/" class="text-primary-500 hover:text-primary-600 text-sm">もっとみる →</a>
-      </div>
-    </section>
-  </div> -->
+      <span class="now-date">{formatDisplayDate(ep.date)}</span>
+    </a>
+  ))}
+
+  <h2 class="section-head">サイトマップ</h2>
+  <ul class="plainlist">
+    {sitemap.map(({ href, text, desc }) => (
+      <li><a href={href}>{text}</a><span class="desc">{desc}</span></li>
+    ))}
+  </ul>
 </BaseLayout>

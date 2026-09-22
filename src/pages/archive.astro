@@ -23,26 +23,41 @@ const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
 ---
 
 <BaseLayout title="Archive">
-  <h1 class="text-4xl font-bold mb-8 text-gray-900">Archive</h1>
-  
-  {years.map(year => (
-    <section class="mb-12">
-      <h2 class="text-2xl font-bold mb-4 text-gray-800">{year}</h2>
-      <ul class="space-y-4">
+  <h1 class="page-title">Archive</h1>
+  <p class="page-lead">ブログの記事を年ごとに</p>
+
+  {years.map((year, i) => (
+    <section>
+      <h2 class:list={['section-head', { 'is-first': i === 0 }]}>{year}</h2>
+      <ul class="plainlist archive-list">
         {postsByYear[year].map(post => (
-          <li class="flex items-baseline gap-4">
-            <span class="text-sm whitespace-nowrap">
-              <PostDate date={post.data.date} />
-            </span>
-            <a
-              href={`/blog/${post.id}`}
-              class="text-gray-900 hover:text-primary-600"
-            >
-              {post.data.title}
-            </a>
+          <li>
+            <PostDate date={post.data.date} class="archive-date" />
+            <a href={`/blog/${post.id}`}>{post.data.title}</a>
           </li>
         ))}
       </ul>
     </section>
   ))}
 </BaseLayout>
+
+<style>
+  .archive-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .archive-list :global(.archive-date) {
+    font-size: 12.5px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .archive-list a {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .section-head.is-first {
+    margin-top: 28px;
+  }
+</style>

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import BlogPreview from '../../components/BlogPreview.astro';
+import ListRow from '../../components/ListRow.astro';
 import { fetchAllBlogs } from '../../lib/content';
 import { getAllTags, getPostsByTag, sortPostsByDate } from '../../utils/posts';
 
@@ -23,8 +23,19 @@ const sortedPosts = sortPostsByDate(posts);
 ---
 
 <BaseLayout title={`Posts tagged with #${tag}`}>
-  <h1 class="text-4xl font-bold mb-8 text-gray-900">Posts tagged with #{tag}</h1>
-  <section>
-    {sortedPosts.map((post) => <BlogPreview post={post} />)}
+  <a class="back-btn" href="/tags/">‹ タグ一覧へ</a>
+  <p class="now-tag">TAG</p>
+  <h1 class="page-title">{tag}</h1>
+  <p class="page-lead">{sortedPosts.length}件の記事</p>
+  <section class="row-list">
+    {sortedPosts.map((post) => (
+      <ListRow
+        href={`/blog/${post.id}`}
+        title={post.data.title}
+        date={post.data.date}
+        desc={post.data.description}
+        tags={post.data.tags}
+      />
+    ))}
   </section>
 </BaseLayout>

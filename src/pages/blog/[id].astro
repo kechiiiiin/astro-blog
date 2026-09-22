@@ -42,12 +42,7 @@ const preview = Boolean(post.data.draft) || !isPublished(post.data.date);
 </BlogPost>
 
 <style>
-  /* microCMSのHTMLコンテンツのスタイリング */
-  :global(.microcms-content p) {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-  }
-
+  /* microCMS 由来の HTML 本文。段落の余白は .article-body（src/styles/site.css）に揃える */
   :global(.microcms-content p:last-child) {
     margin-bottom: 0;
   }
