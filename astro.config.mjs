@@ -23,6 +23,8 @@ export default defineConfig({
   output: 'static',
   image: {
     service: { entrypoint: 'astro/assets/services/sharp' },
+    // Podcast アートワーク（LISTEN の RSS）をビルド時に astro:assets で縮めるためのリモート画像許可。
+    domains: ['image.listen.style'],
   },
   integrations: [
     tailwind(),

@@ -1,4 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
+import { getImage } from 'astro:assets';
 import type { PodcastFeed, PodcastEpisode, PodcastChannel, PodcastConfig } from '../types/podcast';
 
 export const PODCAST_CONFIGS: PodcastConfig[] = [
@@ -97,4 +98,24 @@ export function formatDuration(duration: string): string {
 
 export function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim();
+}
+
+export interface OptimizedArtwork {
+  src: string;
+  width: number;
+  height: number;
+}
+
+// LISTEN のチャンネル画像は原寸 3000px 級（数MB）で来るので、表示サイズ（72px 表示の2倍=144px）へ
+// ビルド時に縮める。astro.config の image.domains に image.listen.style を許可済み。
+// 取得・変換に失敗しても /podcasts のビルドを落とさず、元URLのまま（縮めずに）出す。
+export async function getOptimizedArtwork(src: string | undefined, size = 144): Promise<OptimizedArtwork | null> {
+  if (!src) return null;
+  try {
+    const optimized = await getImage({ src, width: size, height: size, format: 'webp' });
+    return { src: optimized.src, width: size, height: size };
+  } catch (e) {
+    console.warn('[podcast] アートワークの最適化に失敗したため元URLのまま出します:', src, e);
+    return { src, width: size, height: size };
+  }
 }

@@ -1,6 +1,8 @@
 ---
+import { Image } from 'astro:assets';
 import { siteConfig } from '../config';
 import Search from './Search.astro';
+import siteIconSource from '../assets/icons/site-icon-source.png';
 
 const navItems = [
   { href: '/diary', text: 'Diary', match: ['/diary'] },
@@ -17,7 +19,7 @@ const isActive = (match: string[]) =>
 <header class="site-header">
   <div class="header-inner">
     <a class="brand" href="/">
-      <img src="/favicon.png" alt="" width="28" height="28" />
+      <Image src={siteIconSource} alt="" width={56} height={56} format="webp" />
       {siteConfig.title}
     </a>
     <nav class="tabnav" aria-label="サイト内">

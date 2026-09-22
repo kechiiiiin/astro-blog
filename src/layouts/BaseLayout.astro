@@ -5,6 +5,7 @@ import LegacyHeader from '../components/heisei/LegacyHeader.astro'
 import LegacyFooter from '../components/heisei/LegacyFooter.astro'
 import { GoogleAnalytics } from 'astro-google-analytics'
 import { siteConfig } from '../config'
+import { getSiteIcons } from '../lib/site-icons'
 import '../styles/site.css'
 
 interface Props {
@@ -25,6 +26,10 @@ const currentUrl = Astro.url.href
 // 平成ページ（/heisei・平成風の隠しページ）は 2026-09 リニューアルの対象外で、
 // ヘッダー・フッター・幅も含めて旧レイアウトのまま出す（src/components/heisei/ に旧部品を退避）。
 const isHeisei = Astro.url.pathname.replace(/\/$/, '') === '/heisei'
+
+// タブの favicon は public/favicon.png（2976px）をそのまま出すと重いので、ビルド時に小さく作り直す
+// （public/favicon.png 自体は消さない・書き換えない。OGP 等で参照され得るため）。
+const { favicon32, appleTouchIcon } = await getSiteIcons()
 ---
 
 <!doctype html>
@@ -35,7 +40,8 @@ const isHeisei = Astro.url.pathname.replace(/\/$/, '') === '/heisei'
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href={favicon32} />
+    <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIcon} />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content={ogType} />

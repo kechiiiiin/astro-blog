@@ -1,9 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { fetchAllPodcastFeeds, formatDuration, stripHtml } from '../../utils/podcast';
+import { fetchAllPodcastFeeds, formatDuration, stripHtml, getOptimizedArtwork } from '../../utils/podcast';
 import { formatDisplayDate } from '../../utils/date';
 
 const allFeeds = await fetchAllPodcastFeeds();
+// 72px 表示 x2 = 144px で縮めた版を並行して用意する（feed の並びと同じ順）。
+const artworks = await Promise.all(allFeeds.map(({ feed }) => getOptimizedArtwork(feed.channel.image)));
 
 function summary(description: string): string {
   const plain = stripHtml(description);
@@ -62,8 +64,15 @@ function summary(description: string): string {
       hidden={index !== 0}
     >
       <div class="podcast-channel">
-        {feed.channel.image && (
-          <img src={feed.channel.image} alt="" class="podcast-art" loading="lazy" />
+        {artworks[index] && (
+          <img
+            src={artworks[index].src}
+            width={artworks[index].width}
+            height={artworks[index].height}
+            alt=""
+            class="podcast-art"
+            loading="lazy"
+          />
         )}
         <div class="podcast-channel-text">
           <p class="podcast-channel-desc">{feed.channel.description}</p>
