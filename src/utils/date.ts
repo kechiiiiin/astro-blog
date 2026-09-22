@@ -29,6 +29,27 @@ export function matchesDateParts(
          parts.day === params.day;
 }
 
+const WEEKDAYS_JA = ['日', '月', '火', '水', '木', '金', '土'] as const;
+
+/** JST の年月日から曜日（日〜土）を返す。ビルド環境のタイムゾーンに依存しない。 */
+export function getWeekdayJa(parts: DateParts): string {
+  const utc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
+  return WEEKDAYS_JA[new Date(utc).getUTCDay()]!;
+}
+
+/**
+ * サイト全体の日付表示（2026-09-21 (月)）。表示用の日付はすべてこれを通す。
+ * 日付は JST で解釈する。
+ */
+export function formatDisplayDate(date: Date): string {
+  const parts = getDateParts(date);
+  return `${parts.year}-${parts.month}-${parts.day} (${getWeekdayJa(parts)})`;
+}
+
+/**
+ * 旧来の YYYY/MM/DD 表示。平成ページ（/heisei・平成風の隠しページ）だけが使う。
+ * 平成ページは「今のまま」残す方針（2026-09-22）なので、新しいページでは使わない。
+ */
 export function formatDate(date: Date): string {
   const { year, month, day } = getDateParts(date);
   return `${year}/${month}/${day}`;
