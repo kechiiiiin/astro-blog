@@ -8,9 +8,9 @@ const allFeeds = await fetchAllPodcastFeeds();
 
 <BaseLayout title="Podcast" description="ポッドキャスト一覧">
   <div class="mb-8">
-    <h1 class="text-4xl font-bold mb-4 text-gray-900 dark:text-white">Podcast</h1>
+    <h1 class="text-4xl font-bold mb-4 text-gray-900">Podcast</h1>
 
-    <div role="tablist" class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+    <div role="tablist" class="flex border-b border-gray-200 mb-6">
       {allFeeds.map(({ config }, index) => (
         <button
           role="tab"
@@ -20,8 +20,8 @@ const allFeeds = await fetchAllPodcastFeeds();
           class:list={[
             'px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 cursor-pointer',
             index === 0
-              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
+              ? 'border-primary-600 text-primary-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
           ]}
           data-tab-index={index}
         >
@@ -37,7 +37,7 @@ const allFeeds = await fetchAllPodcastFeeds();
         aria-labelledby={`tab-${index}`}
         class={index !== 0 ? 'hidden' : ''}
       >
-        <div class="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 mb-6">
           {feed.channel.image && (
             <img
               src={feed.channel.image}
@@ -46,17 +46,17 @@ const allFeeds = await fetchAllPodcastFeeds();
             />
           )}
           <div>
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">
               {feed.channel.title}
             </h2>
-            <p class="text-gray-600 dark:text-gray-300 text-sm">
+            <p class="text-gray-600 text-sm">
               {feed.channel.description}
             </p>
             <a
               href={feed.channel.link}
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center mt-2 text-primary-600 dark:text-primary-400 hover:underline text-sm"
+              class="inline-flex items-center mt-2 text-primary-600 hover:underline text-sm"
             >
               {config.linkText}
               <svg
@@ -90,8 +90,8 @@ const allFeeds = await fetchAllPodcastFeeds();
     const tabs = document.querySelectorAll<HTMLButtonElement>('[role="tab"]');
     const panels = document.querySelectorAll<HTMLDivElement>('[role="tabpanel"]');
 
-    const activeClasses = 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400';
-    const inactiveClasses = 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600';
+    const activeClasses = 'border-primary-600 text-primary-600';
+    const inactiveClasses = 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
 
     tabs.forEach((tab) => {
       tab.addEventListener('click', () => {

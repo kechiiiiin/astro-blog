@@ -23,11 +23,11 @@ const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
 ---
 
 <BaseLayout title="Archive">
-  <h1 class="text-4xl font-bold mb-8 text-gray-900 dark:text-white">Archive</h1>
+  <h1 class="text-4xl font-bold mb-8 text-gray-900">Archive</h1>
   
   {years.map(year => (
     <section class="mb-12">
-      <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">{year}</h2>
+      <h2 class="text-2xl font-bold mb-4 text-gray-800">{year}</h2>
       <ul class="space-y-4">
         {postsByYear[year].map(post => (
           <li class="flex items-baseline gap-4">
@@ -36,7 +36,7 @@ const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
             </span>
             <a
               href={`/blog/${post.id}`}
-              class="text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
+              class="text-gray-900 hover:text-primary-600"
             >
               {post.data.title}
             </a>

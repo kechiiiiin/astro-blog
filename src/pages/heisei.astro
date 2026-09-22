@@ -26,7 +26,7 @@ const latestDiaryEntries = filterDiaries(diaryEntries, {
 
 <BaseLayout title={siteConfig.title}>
   <!-- ☆ﾟ.*･｡ﾟ 平成のホームページ風 歓迎エリア ﾟ｡･*.ﾟ☆ -->
-  <div class="heisei-welcome text-center mb-8 py-6 border-b-2 border-dashed border-yellow-400 dark:border-yellow-600">
+  <div class="heisei-welcome text-center mb-8 py-6 border-b-2 border-dashed border-yellow-400">
     <p class="welcome-text text-2xl md:text-3xl font-bold mb-4">
       ☆ﾟ.*･｡ﾟ ようこそ！けちーんのホームページへ！ ﾟ｡･*.ﾟ☆
     </p>
@@ -36,11 +36,11 @@ const latestDiaryEntries = filterDiaries(diaryEntries, {
     </marquee>
 
     <div class="counter-area my-4 flex items-center justify-center gap-2 flex-wrap">
-      <span class="text-sm text-gray-700 dark:text-gray-300">あなたは</span>
+      <span class="text-sm text-gray-700">あなたは</span>
       <span id="visitor-counter" class="counter-display">000000</span>
-      <span class="text-sm text-gray-700 dark:text-gray-300">人目のお客様です</span>
+      <span class="text-sm text-gray-700">人目のお客様です</span>
     </div>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+    <p class="text-xs text-gray-500 mt-1">
       ※キリ番踏んだ方はご連絡ください！
     </p>
   </div>
@@ -51,13 +51,13 @@ const latestDiaryEntries = filterDiaries(diaryEntries, {
       ♪ﾟ+.☆ 管理人のごあいさつ ☆.+ﾟ♪
     </h1>
     <div class="about-separator text-center text-xs mb-3">─━─━─━─━─━─━─━─━─━─</div>
-    <p class="text-base mb-3 text-gray-800 dark:text-gray-200">
+    <p class="text-base mb-3 text-gray-800">
       けちーんです（＾▽＾）ノ<br/>
       日記書いたり、ブログ書いたり、自由に書いていきます！<br/>
       気軽に見ていってくださいね♪
     </p>
     <div class="about-separator text-center text-xs mb-3">─━─━─━─━─━─━─━─━─━─</div>
-    <p class="text-sm mb-2 text-gray-600 dark:text-gray-400">▼ 管理人のリンク集 ▼</p>
+    <p class="text-sm mb-2 text-gray-600">▼ 管理人のリンク集 ▼</p>
     <SocialLinks />
   </div>
 
@@ -123,11 +123,11 @@ const latestDiaryEntries = filterDiaries(diaryEntries, {
   </div>
 
   <!-- 平成風フッター装飾 -->
-  <div class="text-center mt-12 pt-6 border-t-2 border-dashed border-yellow-400 dark:border-yellow-600">
-    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+  <div class="text-center mt-12 pt-6 border-t-2 border-dashed border-yellow-400">
+    <p class="text-xs text-gray-500 mb-2">
       🚧 このサイトは永遠に工事中です 🚧
     </p>
-    <p class="text-xs text-gray-400 dark:text-gray-500">
+    <p class="text-xs text-gray-400">
       since 2024 | Best viewed with ❤️
     </p>
   </div>

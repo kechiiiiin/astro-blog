@@ -17,7 +17,7 @@ const { page } = Astro.props;
 ---
 
 <BaseLayout title="Blog Posts">
-  <h1 class="text-4xl font-bold mb-8  text-gray-900 dark:text-white">Blog</h1>
+  <h1 class="text-4xl font-bold mb-8  text-gray-900">Blog</h1>
   <section class="flex flex-col gap-6">
     {page.data.map((post) => <BlogPreview post={post} />)}
   </section>

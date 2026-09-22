@@ -38,25 +38,6 @@ const maxWidthClass = {
     <title>{title}</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    
-    <!-- テーマの初期化スクリプト（FOUCを防ぐため） -->
-    <script is:inline>
-      (() => {
-        const theme = (() => {
-          if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-            return localStorage.getItem('theme');
-          }
-          return 'light';
-        })();
-        
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      })();
-    </script>
-
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content={ogType} />
     <meta property="og:url" content={currentUrl} />
@@ -76,7 +57,7 @@ const maxWidthClass = {
 
     {siteConfig.googleAnalysis && <GoogleAnalytics id={siteConfig.googleAnalysis} />}
   </head>
-  <body class="min-h-screen bg-white dark:bg-gray-900">
+  <body class="min-h-screen bg-white">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <Header />
     </div>

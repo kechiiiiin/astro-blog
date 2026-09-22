@@ -8,19 +8,19 @@ const { Content } = await profileEntry.render();
 ---
 
 <BaseLayout title="Profile">
-  <h1 class="text-4xl font-bold mb-8 text-gray-900 dark:text-white">Profile</h1>
+  <h1 class="text-4xl font-bold mb-8 text-gray-900">Profile</h1>
 
   <!-- Markdown content -->
-  <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 prose prose-lg dark:prose-invert
-    prose-headings:text-gray-900 dark:prose-headings:text-gray-100
-    prose-p:text-gray-700 dark:prose-p:text-gray-300
-    prose-a:text-blue-600 dark:prose-a:text-blue-400
-    hover:prose-a:text-blue-500 dark:hover:prose-a:text-blue-300
-    prose-strong:text-gray-900 dark:prose-strong:text-gray-100
-    prose-code:text-gray-300 dark:prose-code:text-gray-400
-    prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300
-    prose-span:text-gray-700 dark:prose-span:text-gray-300
-    prose-li:text-gray-700 dark:prose-li:text-gray-300
+  <div class="bg-gray-100 rounded-lg p-6 prose prose-lg
+    prose-headings:text-gray-900
+    prose-p:text-gray-700
+    prose-a:text-blue-600
+    hover:prose-a:text-blue-500
+    prose-strong:text-gray-900
+    prose-code:text-gray-300
+    prose-blockquote:text-gray-700
+    prose-span:text-gray-700
+    prose-li:text-gray-700
     max-w-none">
     <Content />
   </div>

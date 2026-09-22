@@ -17,8 +17,8 @@ const { page } = Astro.props;
 ---
 
 <BaseLayout title="Emonicle Posts">
-  <h1 class="text-4xl font-bold mb-4 text-gray-900 dark:text-white">Emonicle</h1>
-  <p class="text-xl mb-8 text-gray-600 dark:text-gray-300">emonicleはemotionとchronicleを合わせた造語です<br>そのときに感じた、ありのままの感情を書き留める場所です</p>
+  <h1 class="text-4xl font-bold mb-4 text-gray-900">Emonicle</h1>
+  <p class="text-xl mb-8 text-gray-600">emonicleはemotionとchronicleを合わせた造語です<br>そのときに感じた、ありのままの感情を書き留める場所です</p>
   <section class="flex flex-col gap-6">
     {page.data.map((post) => <EmoniclePreview post={post} />)}
   </section>

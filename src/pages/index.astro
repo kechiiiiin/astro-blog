@@ -29,20 +29,20 @@ const latestDiaryEntries = filterDiaries(diaryEntries, {
 
 <BaseLayout title={siteConfig.title}>
   <div class="text-left mb-8">
-    <h1 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{siteConfig.slogan}</h1>
+    <h1 class="text-2xl font-bold mb-4 text-gray-900">{siteConfig.slogan}</h1>
     <SocialLinks />
-    <!-- <p class="text-xl mb-8 text-gray-600 dark:text-gray-300">{siteConfig.description}</p> -->
+    <!-- <p class="text-xl mb-8 text-gray-600">{siteConfig.description}</p> -->
   </div>
 
   {HomeContent && (
-    <div class="prose dark:prose-invert max-w-none mb-12">
+    <div class="prose max-w-none mb-12">
       <HomeContent />
     </div>
   )}
 
   <!-- <div class="space-y-16">
     <section>
-      <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">最新の日記</h2>
+      <h2 class="text-2xl font-bold mb-6 text-gray-900">最新の日記</h2>
       <div class="space-y-8">
         {latestDiaryEntries.map((entry) => <DiaryPreview entry={entry} />)}
       </div>
@@ -52,7 +52,7 @@ const latestDiaryEntries = filterDiaries(diaryEntries, {
     </section>
 
     <section>
-      <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">最新のブログ</h2>
+      <h2 class="text-2xl font-bold mb-6 text-gray-900">最新のブログ</h2>
       <div class="space-y-8">
         {homePagePosts.map((post) => <BlogPreview post={post} />)}
       </div>

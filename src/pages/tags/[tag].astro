@@ -23,7 +23,7 @@ const sortedPosts = sortPostsByDate(posts);
 ---
 
 <BaseLayout title={`Posts tagged with #${tag}`}>
-  <h1 class="text-4xl font-bold mb-8 text-gray-900 dark:text-white">Posts tagged with #{tag}</h1>
+  <h1 class="text-4xl font-bold mb-8 text-gray-900">Posts tagged with #{tag}</h1>
   <section>
     {sortedPosts.map((post) => <BlogPreview post={post} />)}
   </section>

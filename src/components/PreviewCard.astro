@@ -24,10 +24,10 @@ const imageHeight = 400;
 */}
 <article class:list={[
   "preview-card group relative",
-  "p-6 bg-gray-50 dark:bg-gray-800/60 rounded-xl",
-  "shadow-md hover:shadow-xl dark:shadow-gray-700/30",
-  "dark:hover:shadow-2xl dark:hover:shadow-primary-500/20",
-  "border border-gray-700 dark:border-gray-500/50",
+  "p-6 bg-gray-50 rounded-xl",
+  "shadow-md hover:shadow-xl",
+  "",
+  "border border-gray-700",
   "transition-all duration-200",
   { "mb-12": showMarginBottom }
 ]}>
@@ -45,7 +45,7 @@ const imageHeight = 400;
     </div>
   )}
   <header>
-    <h2 class="text-xl font-bold mb-2 text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400">
+    <h2 class="text-xl font-bold mb-2 text-gray-900 hover:text-primary-600">
       <a href={href} class="preview-card__link">{title}</a>
     </h2>
     <slot name="meta" />
