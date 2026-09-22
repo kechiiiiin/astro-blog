@@ -22,12 +22,13 @@ export function remarkBlankLines() {
     visit(tree, 'paragraph', (node: Paragraph, index, parent) => {
       if (!parent || typeof index !== 'number') return;
 
-      // 段落全体が U+00A0 のみ（既に独立した空行段落）→ そのまま通す
+      // 段落全体が U+00A0 のみ（既に独立した空行段落）→ 印だけ付けて通す
       if (
         node.children.length === 1 &&
         node.children[0].type === 'text' &&
         NBSP_LINE_RE.test((node.children[0] as { value: string }).value)
       ) {
+        node.data = { ...node.data, hProperties: { ...(node.data?.hProperties ?? {}), className: ['blank-line'] } };
         return;
       }
 
@@ -100,6 +101,7 @@ function splitParagraphByNbspLines(node: Paragraph): RootContent[] | null {
       // U+00A0 のみの段落 → <p>&nbsp;</p> → p マージン 0 でも line-height ぶんの高さを持つ
       result.push({
         type: 'paragraph',
+        data: { hProperties: { className: ['blank-line'] } },
         children: [{ type: 'text', value: NBSP }],
       } as Paragraph);
     } else if (p.length > 0) {

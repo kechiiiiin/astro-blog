@@ -85,7 +85,7 @@ const dateSmall = `${year}-${month}-${day} (${weekday})`;
     border: none;
     background: none;
     color: var(--muted);
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     padding: 8px 0;
@@ -98,7 +98,7 @@ const dateSmall = `${year}-${month}-${day} (${weekday})`;
   }
   .read-date-small {
     font-family: var(--serif);
-    font-size: 12px;
+    font-size: 14px;
     color: var(--muted);
     margin: 0 0 6px;
     letter-spacing: 0.02em;
@@ -130,6 +130,10 @@ const dateSmall = `${year}-${month}-${day} (${weekday})`;
   }
   :global(.diary-content p:last-child) {
     margin-bottom: 0;
+  }
+  /* 空行（U+00A0 の段落）は段落の余白を足さず、1行ぶんの高さだけにする */
+  :global(.diary-content p.blank-line) {
+    margin: 0;
   }
   :global(.diary-content strong) {
     font-weight: 700;
