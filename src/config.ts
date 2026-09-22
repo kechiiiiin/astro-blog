@@ -37,3 +37,8 @@ export const siteConfig: SiteConfig = {
   googleAnalysis: "", // your google analysis id
   search: true, // set this to false if you don't want to provide a search feature
 };
+
+// 日記の写真（images.kechiiiiin.com）を Cloudflare の画像変換（/cdn-cgi/image/...）経由に書き換えるか。
+// ⚠️ ゾーンで画像変換がまだ有効になっていない間は false のまま（有効化すると /cdn-cgi/image/ は 404）。
+// 有効化できたらここを true にして push する（src/plugins/rehype-diary-images.ts・src/lib/content/index.ts が参照）。
+export const imageTransform = false;

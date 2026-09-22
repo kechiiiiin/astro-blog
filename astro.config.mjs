@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import rehypePrettyCode from 'rehype-pretty-code';
-import { siteConfig } from './src/config';
+import { siteConfig, imageTransform } from './src/config';
 import mdx from '@astrojs/mdx';
 import embeds from 'astro-embed/integration';
 import sitemap from '@astrojs/sitemap';
@@ -16,6 +16,7 @@ import {
   rehypeTargetBlank,
   rehypeCodeTitle,
   rehypeImageNotProse,
+  rehypeDiaryImages,
 } from './src/plugins';
 
 export default defineConfig({
@@ -60,6 +61,7 @@ export default defineConfig({
       }],
       rehypeTargetBlank,
       rehypeImageNotProse,
+      [rehypeDiaryImages, { enabled: imageTransform }],
     ],
   },
 });

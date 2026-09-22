@@ -1,5 +1,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { getDateParts } from '../../utils/date';
+import { imageTransform } from '../../config';
+import { transformDiaryImagesHtml } from '../../plugins/lib/transform-diary-html';
 import type { UnifiedBlogEntry, UnifiedDiaryEntry, UnifiedEmonicleEntry } from './types';
 
 export type {
@@ -24,9 +26,15 @@ function toUnified(entry: CollectionEntry<'blog' | 'diary' | 'emonicle'>, slug: 
       draft: entry.data.draft,
       image: entry.data.heroImage,        // 既存ページは data.image を参照
     },
-    body: entry.body,
+    body: entry.body, // RSS はここを直接使う（元のURLのまま出す。画像の書き換えは render() 側だけ）
     render: isHtml
-      ? async () => ({ Content: () => entry.body })   // 生HTMLをそのまま返す（set:html用）
+      ? async () => {
+          // format:'html'（microCMS 移行分）は astro:content の render() を通らず、ここで直接
+          // entry.body を返す（set:html用）ため、remark/rehype 経路の rehypeDiaryImages が効かない。
+          // 同じ書き換えをここで直接かける（imageTransform が false の間は中身を素通しするだけ）。
+          const html = await transformDiaryImagesHtml(entry.body, imageTransform);
+          return { Content: () => html };
+        }
       : () => entry.render(),                          // md は Astro に描画させる
     source: (isHtml ? 'microcms' : 'markdown') as const, // 既存分岐を再利用するための互換値
   };

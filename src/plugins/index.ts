@@ -9,3 +9,4 @@ export { remarkLinkCard } from './remark-link-card';
 export { rehypeTargetBlank } from './rehype-target-blank';
 export { rehypeCodeTitle } from './rehype-code-title';
 export { rehypeImageNotProse } from './rehype-image-not-prose';
+export { rehypeDiaryImages } from './rehype-diary-images';
