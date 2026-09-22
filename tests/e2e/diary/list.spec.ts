@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-// 一覧カードのリンク。DiaryPreview / PreviewCard は stretched link パターンで、
+// Pagination.astro のページ送りリンク（2026-09 リニューアルで Next / Previous から日本語に）
+const NEXT_LABEL = '古い記事 ›';
+const PREV_LABEL = '‹ 新しい記事';
+
+// 一覧の行のリンク。ListRow は stretched link パターンで、
 // <article><h2><a href="/diary/YYYY/MM/DD">タイトル</a></h2>…</article> という構造。
 // タイトルのアンカーの ::after がカード全面に広がり、カードのどこでもクリックできる。
 const ENTRY_CARD_LINK = 'section article h2 > a[href^="/diary/"]';
@@ -9,7 +13,8 @@ test.describe('日記一覧ページ', () => {
   test('日記一覧が表示される', async ({ page }) => {
     await page.goto('/diary');
 
-    const heading = page.getByRole('heading', { name: 'Diary' });
+    // 2026-09 リニューアルで見出しは「日記」
+    const heading = page.getByRole('heading', { name: '日記', level: 1 });
     await expect(heading).toBeVisible();
 
     const entries = page.locator('article, .diary-preview');
@@ -44,8 +49,8 @@ test.describe('日記一覧ページ', () => {
   test('ページネーションが機能する', async ({ page }) => {
     await page.goto('/diary');
 
-    // 1ページあたり10件・日記は11件以上あるため、1ページ目には必ず Next がある
-    const nextPageLink = page.getByRole('link', { name: 'Next', exact: true });
+    // 1ページあたり10件・日記は11件以上あるため、1ページ目には必ず「古い記事」がある
+    const nextPageLink = page.getByRole('link', { name: NEXT_LABEL, exact: true });
     await expect(nextPageLink).toBeVisible();
 
     await nextPageLink.click();
@@ -55,8 +60,8 @@ test.describe('日記一覧ページ', () => {
     expect(await entries.count()).toBeGreaterThan(0);
     await expect(page.locator(ENTRY_CARD_LINK).first()).toBeVisible();
 
-    // 2ページ目からは Previous で1ページ目に戻れる
-    const prevPageLink = page.getByRole('link', { name: 'Previous', exact: true });
+    // 2ページ目からは「新しい記事」で1ページ目に戻れる
+    const prevPageLink = page.getByRole('link', { name: PREV_LABEL, exact: true });
     await expect(prevPageLink).toBeVisible();
 
     await prevPageLink.click();

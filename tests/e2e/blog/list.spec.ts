@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-// 一覧カードのリンク。PreviewCard は stretched link パターンで、
+// Pagination.astro のページ送りリンク（2026-09 リニューアルで Next / Previous から日本語に）
+const NEXT_LABEL = '古い記事 ›';
+const PREV_LABEL = '‹ 新しい記事';
+
+// 一覧の行のリンク。ListRow は stretched link パターンで、
 // <article><h2><a href="/blog/xxx">タイトル</a></h2>…<a href="/tags/…"> という構造。
 // タイトルのアンカーの ::after がカード全面に広がり、カードのどこでもクリックできる。
 // カード1枚につきタイトルのアンカーはちょうど1つなので、これを掴む。
@@ -13,8 +17,8 @@ test.describe('ブログ一覧ページ', () => {
   test('ブログ一覧が表示される', async ({ page }) => {
     await page.goto('/blog');
 
-    // ページタイトルの確認
-    const heading = page.getByRole('heading', { name: 'Blog' });
+    // ページタイトルの確認（2026-09 リニューアルで見出しは「ブログ」）
+    const heading = page.getByRole('heading', { name: 'ブログ', level: 1 });
     await expect(heading).toBeVisible();
 
     // 記事プレビューの存在確認
@@ -82,7 +86,8 @@ test.describe('ブログ一覧ページ', () => {
     expect(tagHref).toMatch(/^\/tags\/.+/);
 
     // タイトルリンクからTabで同じカードのタグリンクへ到達できる
-    const firstCard = page.locator('section article').first();
+    // （先頭の記事にタグが無いこともあるので、タグを持つ最初のカードで確かめる）
+    const firstCard = page.locator('section article', { has: page.locator('a[href^="/tags/"]') }).first();
     await firstCard.locator('h2 > a').focus();
     await page.keyboard.press('Tab');
     const focusedHref = await page.evaluate(() => document.activeElement?.getAttribute('href'));
@@ -98,8 +103,8 @@ test.describe('ブログ一覧ページ', () => {
   test('ページネーションが機能する', async ({ page }) => {
     await page.goto('/blog');
 
-    // 1ページあたり10件・記事は11件以上あるため、1ページ目には必ず Next がある
-    const nextPageLink = page.getByRole('link', { name: 'Next', exact: true });
+    // 1ページあたり10件・記事は11件以上あるため、1ページ目には必ず「古い記事」がある
+    const nextPageLink = page.getByRole('link', { name: NEXT_LABEL, exact: true });
     await expect(nextPageLink).toBeVisible();
 
     await nextPageLink.click();
@@ -108,8 +113,8 @@ test.describe('ブログ一覧ページ', () => {
     // 2ページ目にも記事カードが並んでいる
     await expect(page.locator(ARTICLE_CARD_LINK).first()).toBeVisible();
 
-    // 2ページ目からは Previous で1ページ目に戻れる
-    const prevPageLink = page.getByRole('link', { name: 'Previous', exact: true });
+    // 2ページ目からは「新しい記事」で1ページ目に戻れる
+    const prevPageLink = page.getByRole('link', { name: PREV_LABEL, exact: true });
     await expect(prevPageLink).toBeVisible();
 
     await prevPageLink.click();
@@ -117,22 +122,17 @@ test.describe('ブログ一覧ページ', () => {
     await expect(page.locator(ARTICLE_CARD_LINK).first()).toBeVisible();
   });
 
-  test('ダークモードの切り替え', async ({ page }) => {
+  test('ライトのみ（ダークモードは 2026-09-22 に廃止）', async ({ page }) => {
     await page.goto('/blog');
 
-    // ダークモードトグルボタン（ThemeToggle.astro / aria-label="Toggle theme"）
-    const darkModeToggle = page.getByRole('button', { name: 'Toggle theme' });
-    await expect(darkModeToggle).toBeVisible();
+    // テーマ切り替えボタンは無い
+    await expect(page.getByRole('button', { name: 'Toggle theme' })).toHaveCount(0);
 
-    const html = page.locator('html');
-    // 初期状態はライトモード
-    await expect(html).not.toHaveClass(/dark/);
-
-    await darkModeToggle.click();
-    await expect(html).toHaveClass(/dark/);
-
-    // もう一度押すとライトモードに戻る
-    await darkModeToggle.click();
-    await expect(html).not.toHaveClass(/dark/);
+    // OS がダーク設定でも html に dark クラスは付かず、地は白のまま
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.reload();
+    await expect(page.locator('html')).not.toHaveClass(/dark/);
+    const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(bg).toBe('rgb(255, 255, 255)');
   });
 });
