@@ -7,143 +7,22 @@ interface Props {
   title: string;
 }
 
+// 本文の器。prose（Tailwind Typography）は余白・リストなどの骨組みにだけ使い、
+// 色は tailwind.config.mjs の typography でサイトのトークン（墨）に寄せてある。
+// ブログ等は class="article-body"（src/styles/site.css）、日記は class="diary-content"（DiaryPost.astro）で組版を載せる。
+// リンクカード（.link-card*）の見た目は site.css に移した。
 const { class: className = '', url, title } = Astro.props;
 ---
 
-<div
-  class:list={[
-    "prose prose-lg",
-    "prose-headings:text-gray-900",
-    "prose-p:text-gray-700",
-    "prose-a:text-primary-600",
-    "hover:prose-a:text-primary-500",
-    "prose-strong:text-gray-900",
-    "prose-code:text-gray-900",
-    "prose-blockquote:text-gray-700",
-    "prose-span:text-gray-700",
-    "prose-li:text-gray-700",
-    "max-w-none",
-    className
-  ]}
->
+<div class:list={['prose prose-lg max-w-none', className]}>
   <slot />
   <HatenaStar url={url} title={title} />
 </div>
 
 <style>
-  /* コードブロックの背景色を調整 */
+  /* Astro 既定の shiki（.astro-code）が来ても地はトークンの下地に */
   :global(.astro-code) {
-    background-color: rgb(243, 244, 246) !important;
-    color: rgb(17, 24, 39) !important;
-  }
-
-  :global(.dark .astro-code) {
-    background-color: rgb(243, 244, 246) !important;
-    color: rgb(17, 24, 39) !important;
-  }
-
-  /*
-   * リンクカード（src/plugins/remark-link-card.ts が吐く HTML）。
-   * 左に正方形の画像、右に ドメイン（灰）→ タイトル（黒）→ 説明（灰）。細い枠の角丸の箱（2026-09-13 決定）。
-   * かけら帳（kakera-cho/src/styles/app.css の .link-card*）と寸法を揃え、色はブログのグレーに合わせる。
-   * カード自体に not-prose を振ってあるので、prose の a / span / img の色・余白は掛からない。
-   */
-  :global(.link-card) {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    margin: 0.75rem 0;
-    padding: 10px;
-    border: 1px solid rgb(229, 231, 235);
-    border-radius: 6px;
-    color: rgb(17, 24, 39);
-    text-decoration: none;
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
-  }
-  :global(.link-card:focus-visible) {
-    outline: 1px solid currentColor;
-    outline-offset: 2px;
-  }
-  @media (hover: hover) {
-    :global(.link-card:hover) {
-      border-color: rgb(156, 163, 175);
-    }
-  }
-  :global(.link-card-thumb) {
-    flex: 0 0 80px;
-    width: 80px;
-    height: 80px;
-    border-radius: 4px;
-    overflow: hidden;
-    background: rgb(243, 244, 246);
-    color: rgb(156, 163, 175);
-  }
-  :global(.link-card-thumb img),
-  :global(.link-card-blank) {
-    display: block;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    object-fit: cover;
-  }
-  :global(.link-card-text) {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    overflow-wrap: anywhere;
-  }
-  :global(.link-card-site) {
-    font-size: 0.75rem;
-    line-height: 1.4;
-    color: rgb(107, 114, 128);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  :global(.link-card-title) {
-    font-size: 0.95rem;
-    font-weight: 600;
-    line-height: 1.45;
-    color: rgb(17, 24, 39);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  :global(.link-card-desc) {
-    font-size: 0.8125rem;
-    line-height: 1.5;
-    color: rgb(107, 114, 128);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  :global(.dark .link-card) {
-    border-color: rgb(55, 65, 81);
-    color: rgb(243, 244, 246);
-  }
-  @media (hover: hover) {
-    :global(.dark .link-card:hover) {
-      border-color: rgb(107, 114, 128);
-    }
-  }
-  :global(.dark .link-card-thumb) {
-    background: rgb(31, 41, 55);
-    color: rgb(107, 114, 128);
-  }
-  :global(.dark .link-card-title) {
-    color: rgb(243, 244, 246);
-  }
-  :global(.dark .link-card-site),
-  :global(.dark .link-card-desc) {
-    color: rgb(156, 163, 175);
+    background-color: var(--soft) !important;
+    color: var(--fg) !important;
   }
 </style>

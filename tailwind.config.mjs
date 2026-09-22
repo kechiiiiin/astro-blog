@@ -19,33 +19,46 @@ export default {
           950: '#0d1911',
         }
       },
+      // 本文（prose）の色はサイトのトークン（src/styles/site.css の :root・墨）に寄せる。
+      // Tailwind 既定の灰色（gray-700 等）は出さない。ライトのみなので dark 版は持たない。
       typography: {
         DEFAULT: {
           css: {
+            '--tw-prose-body': 'var(--fg)',
+            '--tw-prose-headings': 'var(--fg)',
+            '--tw-prose-lead': 'var(--muted)',
+            '--tw-prose-links': 'var(--fg)',
+            '--tw-prose-bold': 'var(--fg)',
+            '--tw-prose-counters': 'var(--muted)',
+            '--tw-prose-bullets': 'var(--muted)',
+            '--tw-prose-hr': 'var(--line)',
+            '--tw-prose-quotes': 'var(--muted)',
+            '--tw-prose-quote-borders': 'var(--line)',
+            '--tw-prose-captions': 'var(--muted)',
+            '--tw-prose-kbd': 'var(--fg)',
+            '--tw-prose-code': 'var(--fg)',
+            '--tw-prose-pre-code': 'var(--fg)',
+            '--tw-prose-pre-bg': 'var(--soft)',
+            '--tw-prose-th-borders': 'var(--line)',
+            '--tw-prose-td-borders': 'var(--line)',
             maxWidth: '65ch',
-            color: 'rgb(31, 41, 55)',
+            color: 'var(--fg)',
             lineHeight: '1.75',
             'h1, h2, h3, h4': {
-              color: 'rgb(17, 24, 39)',
+              color: 'var(--fg)',
               fontWeight: '700',
             },
-            a: {
-              color: 'rgb(37, 99, 235)',
-              '&:hover': {
-                color: 'rgb(29, 78, 216)',
-              },
-            },
             code: {
-              color: 'rgb(31, 41, 55)',
-              backgroundColor: 'rgb(243, 244, 246)',
+              color: 'var(--fg)',
+              backgroundColor: 'var(--line)',
               padding: '0.2em 0.4em',
               borderRadius: '0.25rem',
               fontWeight: '400',
             },
             a: {
-              color: 'rgb(37, 99, 235)',
+              color: 'var(--fg)',
               '&:hover': {
-                color: 'rgb(29, 78, 216)',
+                color: 'var(--fg)',
               },
               overflowWrap: 'break-word',
               wordBreak: 'break-word',
@@ -69,42 +82,6 @@ export default {
             p: {
               marginTop: '0',
               marginBottom: '0',
-            },
-          },
-        },
-        dark: {
-          css: {
-            color: 'rgb(229, 231, 235)',
-            'h1, h2, h3, h4': {
-              color: 'rgb(243, 244, 246)',
-            },
-            a: {
-              color: 'rgb(96, 165, 250)',
-              '&:hover': {
-                color: 'rgb(147, 197, 253)',
-              },
-            },
-            code: {
-              color: 'rgb(243, 244, 246)',
-              backgroundColor: 'rgb(31, 41, 55)',
-            },
-            blockquote: {
-              color: 'rgb(229, 231, 235)',
-              borderLeftColor: 'rgb(75, 85, 99)',
-            },
-            'ul, ol': {
-              color: 'rgb(229, 231, 235)',
-            },
-            'li': {
-              color: 'rgb(229, 231, 235)',
-              marginTop: '0',
-              marginBottom: '0',
-            },
-            'p': {
-              color: 'rgb(229, 231, 235)',
-            },
-            strong: {
-              color: 'rgb(243, 244, 246)',
             },
           },
         },

@@ -1,12 +1,20 @@
 ---
-import { siteConfig } from "../config";
-
-const currentYear = new Date().getFullYear();
+import { siteConfig } from '../config';
 ---
 
-<footer class="py-6 text-center text-gray-600">
-  <p>&copy; {currentYear} {siteConfig.title}. All rights reserved.</p>
-  <p>
-    Powered by <a href="https://github.com/larry-xue/astro-zen-blog" class="text-primary-500" target="_blank">Astro Zen Blog</a>
-  </p>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p>{siteConfig.title}</p>
+    <p>
+      {siteConfig.social.x && (
+        <a href={siteConfig.social.x} target="_blank" rel="noopener noreferrer">X (@kechiiin_)</a>
+      )}
+      {siteConfig.social.rss && (
+        <>
+          <span class="sep" aria-hidden="true">/</span>
+          <a href="/rss.xml">RSS</a>
+        </>
+      )}
+    </p>
+  </div>
 </footer>

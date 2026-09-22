@@ -1,0 +1,13 @@
+---
+// 平成ページ専用：2026-09 リニューアル前の Footer.astro をそのまま退避したもの。変更しない。
+import { siteConfig } from "../../config";
+
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="py-6 text-center text-gray-600">
+  <p>&copy; {currentYear} {siteConfig.title}. All rights reserved.</p>
+  <p>
+    Powered by <a href="https://github.com/larry-xue/astro-zen-blog" class="text-primary-500" target="_blank">Astro Zen Blog</a>
+  </p>
+</footer>

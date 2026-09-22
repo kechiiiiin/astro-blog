@@ -3,33 +3,28 @@ import { siteConfig } from '../config';
 import Search from './Search.astro';
 
 const navItems = [
-  { href: '/diary', text: 'Diary' },
-  { href: '/blog', text: 'Blog' },
-  { href: '/podcasts', text: 'Podcast' },
-  { href: '/profile', text: 'Profile' },
+  { href: '/diary', text: 'Diary', match: ['/diary'] },
+  { href: '/blog', text: 'Blog', match: ['/blog', '/tags', '/archive'] },
+  { href: '/podcasts', text: 'Podcast', match: ['/podcasts'] },
+  { href: '/profile', text: 'Profile', match: ['/profile'] },
 ];
+
+const path = Astro.url.pathname;
+const isActive = (match: string[]) =>
+  match.some((m) => path === m || path.startsWith(`${m}/`));
 ---
 
-<header class="pt-6 sticky top-0 bg-white z-50">
-  <nav class="flex justify-between items-center flex-wrap">
-    <a href="/" class="flex items-center gap-2 text-2xl font-bold text-gray-900">
-      <img src="/favicon.png" alt="Site Icon" class="w-10 h-10" />
-      { siteConfig.title }
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/">
+      <img src="/favicon.png" alt="" width="28" height="28" />
+      {siteConfig.title}
     </a>
-    <div class="flex items-center gap-6">
-      <ul class="flex gap-6">
-        {navItems.map(({ href, text }) => (
-          <li>
-            <a
-              href={href}
-              class="text-gray-700 hover:text-gray-900"
-            >
-              {text}
-            </a>
-          </li>
-        ))}
-      </ul>
-      {siteConfig.search && <Search />}
-    </div>
-  </nav>
+    <nav class="tabnav" aria-label="サイト内">
+      {navItems.map(({ href, text, match }) => (
+        <a href={href} aria-current={isActive(match) ? 'page' : undefined}>{text}</a>
+      ))}
+    </nav>
+    {siteConfig.search && <div class="header-search"><Search /></div>}
+  </div>
 </header>

@@ -1,0 +1,36 @@
+---
+// 平成ページ専用：2026-09 リニューアル前の Header.astro をそのまま退避したもの。変更しない。
+import { siteConfig } from '../../config';
+import Search from './LegacySearch.astro';
+
+const navItems = [
+  { href: '/diary', text: 'Diary' },
+  { href: '/blog', text: 'Blog' },
+  { href: '/podcasts', text: 'Podcast' },
+  { href: '/profile', text: 'Profile' },
+];
+---
+
+<header class="pt-6 sticky top-0 bg-white z-50">
+  <nav class="flex justify-between items-center flex-wrap">
+    <a href="/" class="flex items-center gap-2 text-2xl font-bold text-gray-900">
+      <img src="/favicon.png" alt="Site Icon" class="w-10 h-10" />
+      { siteConfig.title }
+    </a>
+    <div class="flex items-center gap-6">
+      <ul class="flex gap-6">
+        {navItems.map(({ href, text }) => (
+          <li>
+            <a
+              href={href}
+              class="text-gray-700 hover:text-gray-900"
+            >
+              {text}
+            </a>
+          </li>
+        ))}
+      </ul>
+      {siteConfig.search && <Search />}
+    </div>
+  </nav>
+</header>

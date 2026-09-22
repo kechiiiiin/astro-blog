@@ -1,0 +1,224 @@
+---
+// 平成ページ専用：2026-09 リニューアル前の Search.astro をそのまま退避したもの。変更しない。
+---
+<button id="search-button" class="text-gray-700 hover:text-gray-900" aria-label="Search">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+</button>
+
+<div id="search-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 z-50 hidden flex items-start justify-center pt-24">
+  <div class="flex items-start bg-white rounded-lg pr-12 pl-6 py-6 max-w-2xl w-full mx-4 flex-col relative">
+    <button id="close-search" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 p-1" aria-label="Close search">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <input type="text" id="search-input" class="w-full p-2 border rounded-lg mb-4" placeholder="Search posts..." autocomplete="off" />
+    <div id="search-results" class="max-h-96 overflow-y-auto w-full">
+      <div class="p-4 text-gray-500">No results found</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let searchData = []
+  let searchInput
+  let searchResults
+  let searchModal
+  let searchButton
+  let closeButton
+  let searchDebounceTimeout
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
+  }
+
+  function debounce(func, wait) {
+    return (...args) => {
+      clearTimeout(searchDebounceTimeout)
+      searchDebounceTimeout = setTimeout(() => func(...args), wait)
+    }
+  }
+
+  async function initialize() {
+    const response = await fetch('/api/search.json')
+    searchData = await response.json()
+
+    searchInput = document.getElementById('search-input')
+    searchResults = document.getElementById('search-results')
+    searchModal = document.getElementById('search-modal')
+    searchButton = document.getElementById('search-button')
+    closeButton = document.getElementById('close-search')
+
+    const debouncedSearch = debounce(handleSearch, 300)
+    searchInput?.addEventListener('input', debouncedSearch)
+    searchButton?.addEventListener('click', openModal)
+    closeButton?.addEventListener('click', closeModal)
+
+    // Close modal on outside click
+    searchModal?.addEventListener('click', (e) => {
+      if (e.target === searchModal) {
+        closeModal()
+      }
+    })
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !searchModal?.classList.contains('hidden')) {
+        closeModal()
+      }
+    })
+
+    // Cleanup function
+    return () => {
+      clearTimeout(searchDebounceTimeout)
+    }
+  }
+
+  function openModal() {
+    searchModal?.classList.remove('hidden')
+    searchInput?.focus()
+  }
+
+  function closeModal() {
+    searchModal?.classList.add('hidden')
+    searchInput.value = ''
+    searchResults.innerHTML = `
+            <div class="p-4 text-gray-500">
+          No results found
+        </div>
+  `
+  }
+
+  function highlightText(text, query) {
+    if (!query) return text
+    const regex = new RegExp(`(${query})`, 'gi')
+    return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>')
+  }
+
+  function handleSearch(e) {
+    const query = e.target.value.toLowerCase()
+
+    if (!query) {
+      searchResults.innerHTML = `
+        <div class="p-4 text-gray-500">
+          No results found
+        </div>
+      `
+      return
+    }
+
+    const results = searchData
+      .filter((post) => {
+        const searchContent = `${post.title} ${post.description} ${post.content} ${post.tags?.join(' ')}`.toLowerCase()
+        return searchContent.includes(query)
+      })
+      .map((post) => {
+        // Find content match
+        const contentMatch = post.content.toLowerCase().indexOf(query.toLowerCase())
+        let matchedContent = ''
+        if (contentMatch !== -1) {
+          const start = Math.max(0, contentMatch - 50)
+          const end = Math.min(post.content.length, contentMatch + query.length + 50)
+          matchedContent = post.content.slice(start, end)
+          if (start > 0) matchedContent = '...' + matchedContent
+          if (end < post.content.length) matchedContent = matchedContent + '...'
+        }
+
+        // Highlight matches in title and content (escape before highlighting)
+        const highlightedTitle = highlightText(escapeHtml(post.title), query)
+        const highlightedContent = highlightText(escapeHtml(matchedContent), query)
+
+        return {
+          ...post,
+          matchedContent: highlightedContent,
+          matchedTitle: highlightedTitle,
+        }
+      })
+      .slice(0, 5)
+
+    displayResults(results)
+  }
+
+  function generatePostUrl(post) {
+    switch (post.collection) {
+      case 'blog':
+        return `/blog/${post.slug}`
+      case 'diary':
+        const date = new Date(post.date)
+        const jstDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }))
+        const year = jstDate.getFullYear()
+        const month = String(jstDate.getMonth() + 1).padStart(2, '0')
+        const day = String(jstDate.getDate()).padStart(2, '0')
+        return `/diary/${year}/${month}/${day}`
+      case 'emonicle':
+        return `/emonicle/${post.slug}`
+      default:
+        return `/blog/${post.slug}`
+    }
+  }
+
+  function displayResults(results) {
+    if (results.length === 0) {
+      searchResults.innerHTML = `
+        <div class="p-4 text-gray-500">
+          No results found
+        </div>
+      `
+    } else {
+      searchResults.innerHTML = results
+        .map(
+          (post) => `
+            <a
+              href="${generatePostUrl(post)}"
+              class="block p-4 hover:bg-gray-100 hover:rounded transition-all duration-200 transform"
+            >
+              <h3 class="font-medium text-gray-900">
+                ${post.matchedTitle || escapeHtml(post.title)}
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">
+                  ${post.collection}
+                </span>
+              </h3>
+              <p class="text-sm text-gray-500">
+                ${escapeHtml(post.description) || ''}
+              </p>
+              ${
+                post.matchedContent
+                  ? `
+                <p class="text-sm text-gray-600 mt-2 font-mono">
+                  ${post.matchedContent}
+                </p>
+              `
+                  : ''
+              }
+              ${post.tags && post.tags.length > 0
+                ? post.tags
+                    .map(
+                      (tag) => `
+                      <span class="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full mt-2 mr-2">
+                        ${escapeHtml(tag)}
+                      </span>
+                      `
+                    )
+                    .join('')
+                : ''
+              }
+            </a>
+          `
+        )
+        .join('')
+    }
+
+    searchResults.classList.remove('hidden')
+  }
+
+  // Initialize search functionality
+  document.addEventListener('DOMContentLoaded', initialize)
+</script>
