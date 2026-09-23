@@ -1,4 +1,11 @@
 {
+  "https://listen.style/p/yamasore": {
+    "description": "最近、山登りの楽しさに気づきました。山に登った話や、それに関する話をしていこうと思いますそれらについて話していきます",
+    "domain": "listen.style",
+    "image": "https://images.kechiiiiin.com/diary/cards/d91a9d81a0e1bede.jpg",
+    "siteName": "LISTEN",
+    "title": "山、それから。"
+  },
   "https://podcasts.apple.com/jp/podcast/%E5%A5%BD%E5%A5%87%E5%BF%83%E3%81%AE%E3%81%9F%E3%81%BE%E3%82%8A%E5%A0%B4/id1847165636?i=1000760344490": {
     "description": "ポッドキャストのエピソード · 好奇心のたまり場 · 4月8日 · 38分",
     "domain": "podcasts.apple.com",
@@ -12,5 +19,12 @@
     "image": "https://images.kechiiiiin.com/diary/cards/d2d3f7d0e239912a.png",
     "siteName": "kechiiiiin.com",
     "title": "プライベート用日記とこのサイトへの日記投稿"
+  },
+  "https://www.oreilly.co.jp/books/9784873118024/": {
+    "description": "複雑で変化の激しい問題に取り組みながら成果を出すチームとは、学習するチームであり、自己組織化されたチームです。そうした状態へとチームを導くには、どのようなリーダーシップが求められるのでしょうか。本書は「エラスティックリーダーシップ」というリーダーシップモデルをもとに、チームを学習する力のある自己組織化された状態へと育てる方法を解説します。 リーダーシップのスタイルをどのように使い分けるべきか。チームに学習することを学ばせるための時間の使い方とは。メンバーが真のコミットメントを示すための言葉遣いとは――。チームをより良くする実践的なヒントが詰まっており、チームリーダーやマネージャーだけでなく、チームで成果に取り組むすべての人におくる一冊です。 後半にはロバート・C・マーチンやジョアンナ・ロスマンなどをはじめとするリーダーたちによるエッセイを収録。日本語版では、伊藤直也、井原正博、海野弘成、岡島幸男、柄沢聡太郎、栗林健太郎、庄司嘉織、関将俊、たなべすなお、永瀬美穂、平鍋健児、まつもとゆきひろ、吉羽龍太郎の13名によるリーダーシップについてのエッセイを収録しています。",
+    "domain": "oreilly.co.jp",
+    "image": "https://images.kechiiiiin.com/diary/cards/9f690a3d70118f23.jpg",
+    "siteName": "oreilly.co.jp",
+    "title": "エラスティックリーダーシップ"
   }
 }
