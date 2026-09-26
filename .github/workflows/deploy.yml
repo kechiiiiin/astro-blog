@@ -3,6 +3,9 @@ name: Deploy to Cloudflare Workers
 on:
   push:
     branches: [main]
+  # 毎朝 JST 5:00 に作り直す（トップの「本」は NoBu から、ポッドキャストは LISTEN からビルド時に取るため）
+  schedule:
+    - cron: "0 20 * * *"
   workflow_dispatch:
     inputs:
       x_post_file:
@@ -12,7 +15,8 @@ on:
 
 concurrency:
   group: deploy-cloudflare
-  cancel-in-progress: true
+  # 定時 run は途中の push の run を取り消さない（取り消すとその push の日記が X に投稿されない）
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   deploy:
@@ -76,7 +80,7 @@ jobs:
           FALLBACK: ${{ github.event.before }}
           CURRENT: ${{ github.sha }}
         run: |
-          sha="$(gh run list --workflow deploy.yml --branch main --status success --limit 5 \
+          sha="$(gh run list --workflow deploy.yml --branch main --event push --status success --limit 5 \
                   --json headSha -q '.[].headSha' 2>/dev/null \
                 | grep -v "^${CURRENT}$" | head -n1 || true)"
           if [ -z "$sha" ]; then
@@ -107,8 +111,9 @@ jobs:
       # Cloudflare では発火しないため、このワークフロー自身から通知する。
       # 記事タイトルが commit メッセージに入る（引用符・改行・日本語を含みうる）ので、
       # 文字列連結ではなく jq で JSON を組み立てること。
+      # 毎朝の定時 run の成功は知らせない（毎日鳴るだけになるため。失敗は下で知らせる）
       - name: Notify Discord (成功)
-        if: success()
+        if: success() && github.event_name != 'schedule'
         env:
           WEBHOOK: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
