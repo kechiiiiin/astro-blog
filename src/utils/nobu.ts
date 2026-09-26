@@ -122,11 +122,25 @@ export function isShelfEmpty(s: NowShelf): boolean {
   return s.reading.length === 0 && s.finished.length === 0 && s.bought.length === 0;
 }
 
+/**
+ * 失敗した応答の手がかり（ビルドログに出す）。
+ * GitHub Actions からだけ 403 になる件（2026-09-26）で、Cloudflare のボット対策か
+ * Access か Worker 自身かを見分けるため: cf-mitigated が challenge ならボット対策、
+ * 本文の <title> が Cloudflare の画面か NoBu の文言かでも分かる
+ */
+async function describeFailure(res: Response): Promise<string> {
+  const h = (k: string) => res.headers.get(k) ?? '-';
+  const body = await res.text().catch(() => '');
+  const title = body.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim();
+  const snippet = title ?? body.replace(/\s+/g, ' ').slice(0, 120);
+  return `server=${h('server')} cf-mitigated=${h('cf-mitigated')} cf-ray=${h('cf-ray')} content-type=${h('content-type')} body=${JSON.stringify(snippet)}`;
+}
+
 /** http(s) は fetch、それ以外（パス・file://）は手元のファイルとして読む */
 async function loadFeed(src: string): Promise<unknown> {
   if (/^https?:\/\//.test(src)) {
     const res = await fetch(src, { headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${await describeFailure(res)}`);
     return res.json();
   }
   const path = src.startsWith('file://') ? fileURLToPath(src) : src;
