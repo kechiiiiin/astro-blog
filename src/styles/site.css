@@ -192,6 +192,32 @@ body.katachi {
   border-bottom-color: var(--mark);
 }
 
+/* ---------- 「いま」の小見出し（日記／ブログ／ポッドキャスト／本） ----------
+   h2 .section-head（18px・2px 線）より一段下。日記一覧の月見出し（.month-head）と同じ作り */
+.now-subhead {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 32px 0 0;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid var(--fg);
+  letter-spacing: 0.04em;
+}
+.now-group:first-of-type .now-subhead {
+  margin-top: 20px;
+}
+/* 「本」の中の区分（読んでいる／最近読み終えた／最近買った）。小見出しよりさらに一段下の小さな見出し */
+.now-minorhead {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin: 16px 0 0;
+  padding: 0 2px;
+}
+
 /* ---------- 「いま」行（ラベル頭に印） ---------- */
 .now-row {
   display: flex;
@@ -258,9 +284,9 @@ body.katachi {
 /* BOOK 行の表紙（左に小さく縦長）。表紙が無い本は img 自体を出さず、ほかの行と同じ見た目 */
 .now-cover {
   flex-shrink: 0;
+  /* 幅を固定して、表紙の縦横比が本ごとに違っても書名の頭がそろうようにする */
   height: 48px;
-  width: auto;
-  max-width: 40px;
+  width: 34px;
   object-fit: cover;
   border: 1px solid var(--line);
 }

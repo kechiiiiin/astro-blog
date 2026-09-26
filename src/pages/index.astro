@@ -3,7 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import { fetchAllBlogs, fetchAllDiaries } from '../lib/content'
 import { filterPosts, filterDiaries } from '../utils/posts'
 import { fetchAllPodcastFeeds } from '../utils/podcast'
-import { fetchLatestBook } from '../utils/nobu'
+import { fetchNowShelf, isShelfEmpty } from '../utils/nobu'
+import NowBookRow from '../components/NowBookRow.astro'
 import { formatDisplayDate, getDiaryPath } from '../utils/date'
 import { siteConfig } from '../config'
 
@@ -31,11 +32,16 @@ try {
   console.warn('[index] podcast RSS の取得に失敗したため「いま」から外します', e)
 }
 
-// 読書は NoBu の公開 JSON から最新の出来事1件（保留を除く）。取れなければ BOOK 行を出さない
-const latestBook = await fetchLatestBook()
-// 版元ドットコムの書籍ページへ（新しいタブ）。ISBN が無い本はリンクにしない
-const BookRow = latestBook?.url ? 'a' : 'div'
-const bookRowAttrs = latestBook?.url ? { href: latestBook.url, target: '_blank', rel: 'noopener noreferrer' } : {}
+// 本は NoBu の公開 JSON から、読んでいる／最近読み終えた／最近買った（どれも直近1週間・保留は除く）。
+// 取れない・3区分とも空なら「本」ごと出さない。空の区分は小見出しごと出さない
+const shelf = await fetchNowShelf()
+const bookGroups = shelf && !isShelfEmpty(shelf)
+  ? [
+      { key: 'reading', label: '読んでいる', rows: shelf.reading },
+      { key: 'finished', label: '最近読み終えた', rows: shelf.finished },
+      { key: 'bought', label: '最近買った', rows: shelf.bought },
+    ].filter((g) => g.rows.length > 0)
+  : []
 
 const sitemap = [
   { href: '/profile/', text: 'プロフィール', desc: '自己紹介' },
@@ -58,47 +64,56 @@ const sitemap = [
   <h2 class="section-head is-first">いま</h2>
 
   {latestDiary && (
-    <a class="now-row" href={getDiaryPath(latestDiary.data.date)}>
-      <div class="now-left">
-        <span class="now-tag">DIARY</span>
-        <span class="now-title">{latestDiary.data.title}</span>
-        {latestDiary.data.description && <span class="now-desc">{latestDiary.data.description}</span>}
-      </div>
-      <span class="now-date">{formatDisplayDate(latestDiary.data.date)}</span>
-    </a>
+    <section class="now-group" data-now="diary">
+      <h3 class="now-subhead">日記</h3>
+      <a class="now-row" href={getDiaryPath(latestDiary.data.date)}>
+        <div class="now-left">
+          <span class="now-title">{latestDiary.data.title}</span>
+          {latestDiary.data.description && <span class="now-desc">{latestDiary.data.description}</span>}
+        </div>
+        <span class="now-date">{formatDisplayDate(latestDiary.data.date)}</span>
+      </a>
+    </section>
   )}
 
   {latestPost && (
-    <a class="now-row" href={`/blog/${latestPost.id}`}>
-      <div class="now-left">
-        <span class="now-tag">BLOG</span>
-        <span class="now-title">{latestPost.data.title}</span>
-        {latestPost.data.description && <span class="now-desc">{latestPost.data.description}</span>}
-      </div>
-      <span class="now-date">{formatDisplayDate(latestPost.data.date)}</span>
-    </a>
+    <section class="now-group" data-now="blog">
+      <h3 class="now-subhead">ブログ</h3>
+      <a class="now-row" href={`/blog/${latestPost.id}`}>
+        <div class="now-left">
+          <span class="now-title">{latestPost.data.title}</span>
+          {latestPost.data.description && <span class="now-desc">{latestPost.data.description}</span>}
+        </div>
+        <span class="now-date">{formatDisplayDate(latestPost.data.date)}</span>
+      </a>
+    </section>
   )}
 
-  {podcastLatest.map((ep) => (
-    <a class="now-row" href={ep.url} target="_blank" rel="noopener noreferrer">
-      <div class="now-left">
-        <span class="now-tag">PODCAST・{ep.label}</span>
-        <span class="now-title">{ep.title}</span>
-      </div>
-      <span class="now-date">{formatDisplayDate(ep.date)}</span>
-    </a>
-  ))}
+  {podcastLatest.length > 0 && (
+    <section class="now-group" data-now="podcast">
+      <h3 class="now-subhead">ポッドキャスト</h3>
+      {podcastLatest.map((ep) => (
+        <a class="now-row" href={ep.url} target="_blank" rel="noopener noreferrer">
+          <div class="now-left">
+            <span class="now-tag">{ep.label}</span>
+            <span class="now-title">{ep.title}</span>
+          </div>
+          <span class="now-date">{formatDisplayDate(ep.date)}</span>
+        </a>
+      ))}
+    </section>
+  )}
 
-  {latestBook && (
-    <BookRow class="now-row is-book" {...bookRowAttrs}>
-      {latestBook.cover && <img class="now-cover" src={latestBook.cover} alt="" height="48" loading="lazy" decoding="async" referrerpolicy="no-referrer" />}
-      <div class="now-left">
-        <span class="now-tag">BOOK・{latestBook.label}</span>
-        <span class="now-title">{latestBook.title}</span>
-        {latestBook.author && <span class="now-desc">{latestBook.author}</span>}
-      </div>
-      <span class="now-date">{formatDisplayDate(latestBook.date)}</span>
-    </BookRow>
+  {bookGroups.length > 0 && (
+    <section class="now-group" data-now="book">
+      <h3 class="now-subhead">本</h3>
+      {bookGroups.map((g) => (
+        <div class="now-book-group" data-book={g.key}>
+          <h4 class="now-minorhead">{g.label}</h4>
+          {g.rows.map((book) => <NowBookRow book={book} />)}
+        </div>
+      ))}
+    </section>
   )}
 
   <h2 class="section-head">サイトマップ</h2>

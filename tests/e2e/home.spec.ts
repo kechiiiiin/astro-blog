@@ -30,19 +30,26 @@ test.describe('ホームページ', () => {
     await expect(page).toHaveURL(/\/blog/);
   });
 
-  test('「いま」に最新の日記・最新のブログが出て、日付は YYYY-MM-DD (曜)', async ({ page }) => {
+  test('「いま」は小見出し 日記／ブログ／ポッドキャスト／本 で区切り、日付は YYYY-MM-DD (曜)', async ({ page }) => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { name: 'いま', level: 2 })).toBeVisible();
+    const subheads = await page.locator('h3.now-subhead').allTextContents();
+    expect(subheads).toEqual(['日記', 'ブログ', 'ポッドキャスト', '本']);
 
-    const diaryRow = page.locator('a.now-row', { has: page.locator('.now-tag', { hasText: 'DIARY' }) });
+    const diaryRow = page.locator('[data-now="diary"] a.now-row');
     await expect(diaryRow).toHaveCount(1);
     expect(await diaryRow.getAttribute('href')).toMatch(/^\/diary\/\d{4}\/\d{2}\/\d{2}$/);
     await expect(diaryRow.locator('.now-date')).toHaveText(/^\d{4}-\d{2}-\d{2} \([日月火水木金土]\)$/);
 
-    const blogRow = page.locator('a.now-row', { has: page.locator('.now-tag', { hasText: 'BLOG' }) });
+    const blogRow = page.locator('[data-now="blog"] a.now-row');
     await expect(blogRow).toHaveCount(1);
     expect(await blogRow.getAttribute('href')).toMatch(/^\/blog\/.+/);
+
+    // DIARY・BLOG の札は無い。ポッドキャストは番組名だけの札（太字）
+    await expect(page.locator('[data-now="diary"] .now-tag, [data-now="blog"] .now-tag')).toHaveCount(0);
+    const podcastTags = await page.locator('[data-now="podcast"] .now-tag').allTextContents();
+    for (const t of podcastTags) expect(t).not.toMatch(/PODCAST/);
   });
 });
 
@@ -59,44 +66,52 @@ test.describe('平成ページ', () => {
   });
 });
 
-test.describe('トップ「いま」の BOOK 行（NoBu の読書記録）', () => {
-  // playwright.config の webServer で NOBU_FEED_URL=tests/e2e/fixtures/nobu-feed.json を渡してビルドしている。
-  // 先頭は「保留にした」、次が「読了」——保留は選ばれない
-  test('最新の読書（保留を除く）が1行、版元ドットコムへ新しいタブで開く', async ({ page }) => {
+test.describe('トップ「いま」の「本」（NoBu の読書記録）', () => {
+  // playwright.config の webServer で NOBU_FEED_URL=tests/e2e/fixtures/nobu-feed.json・NOBU_TODAY=2026-09-26 でビルドしている
+  test('読んでいる／最近読み終えた／最近買った に分かれ、新しい順・保留は出ない', async ({ page }) => {
     await page.goto('/');
+    const book = page.locator('[data-now="book"]');
+    expect(await book.locator('h4.now-minorhead').allTextContents()).toEqual(['読んでいる', '最近読み終えた', '最近買った']);
 
-    const bookRow = page.locator('.now-row', { has: page.locator('.now-tag', { hasText: /^BOOK・/ }) });
-    await expect(bookRow).toHaveCount(1);
-    await expect(bookRow.locator('.now-tag')).toHaveText('BOOK・読了');
-    await expect(bookRow.locator('.now-title')).toHaveText('エラスティックリーダーシップ');
-    await expect(bookRow.locator('.now-desc')).toHaveText(/Roy Osherove/);
-    await expect(bookRow.locator('.now-date')).toHaveText(/^\d{4}-\d{2}-\d{2} \([日月火水木金土]\)$/);
-    await expect(page.locator('.now-tag', { hasText: '保留' })).toHaveCount(0);
+    const titlesOf = (key: string) => book.locator(`[data-book="${key}"] .now-title`).allTextContents();
+    // 読んでいるの「新しい」は最後に動いた日（読んだ日・読み始めた日の遅い方）
+    expect(await titlesOf('reading')).toEqual(['福岡市の問題解決', '86-エイティシックスーEp.12 ─ホーリィ・ブルー・ブレット─']);
+    expect(await titlesOf('finished')).toEqual(['エラスティックリーダーシップ', '読書思考トレーニング']);
+    expect(await titlesOf('bought')).toEqual(['ゆとりの法則', '人文知は武器になる']);
+    await expect(book.getByText('失敗の本質')).toHaveCount(0);
 
-    // 行全体がリンク
-    expect(await bookRow.evaluate((el) => el.tagName)).toBe('A');
-    expect(await bookRow.getAttribute('href')).toBe('https://www.hanmoto.com/bd/isbn/9784873118024');
-    expect(await bookRow.getAttribute('target')).toBe('_blank');
-    expect(await bookRow.getAttribute('rel')).toBe('noopener noreferrer');
-
-    // 表紙は左に小さく
-    const cover = bookRow.locator('img.now-cover');
-    await expect(cover).toHaveCount(1);
-    const box = await cover.boundingBox();
-    const leftBox = await bookRow.locator('.now-left').boundingBox();
-    expect(box && leftBox && box.x < leftBox.x).toBeTruthy();
-
-    // PODCAST 行より後ろ
-    const tags = await page.locator('.now-row .now-tag').allTextContents();
-    const lastPodcast = tags.map((t) => t.startsWith('PODCAST')).lastIndexOf(true);
-    const bookIndex = tags.findIndex((t) => t.startsWith('BOOK'));
-    if (lastPodcast >= 0) expect(bookIndex).toBeGreaterThan(lastPodcast);
+    // 日付: 読んでいる＝読み始めた日〜、読み終えた＝読了日、買った＝買った日
+    await expect(book.locator('[data-book="reading"] .now-row').first().locator('.now-date')).toHaveText('2026-09-22 (火)〜');
+    await expect(book.locator('[data-book="finished"] .now-row').first().locator('.now-date')).toHaveText('2026-09-26 (土)');
+    await expect(book.locator('[data-book="bought"] .now-row').first().locator('.now-date')).toHaveText('2026-09-24 (木)');
   });
 
-  test('札は太字', async ({ page }) => {
+  test('ISBN があれば行全体が版元ドットコムへ新しいタブ・無ければリンクにしない／表紙が無ければ画像を出さない', async ({ page }) => {
+    await page.goto('/');
+    const book = page.locator('[data-now="book"]');
+
+    const done = book.locator('[data-book="finished"] .now-row').first();
+    expect(await done.evaluate((el) => el.tagName)).toBe('A');
+    expect(await done.getAttribute('href')).toBe('https://www.hanmoto.com/bd/isbn/9784873118024');
+    expect(await done.getAttribute('target')).toBe('_blank');
+    expect(await done.getAttribute('rel')).toBe('noopener noreferrer');
+    await expect(done.locator('.now-desc')).toHaveText(/Roy Osherove/);
+    const cover = done.locator('img.now-cover');
+    await expect(cover).toHaveCount(1);
+    const box = await cover.boundingBox();
+    const leftBox = await done.locator('.now-left').boundingBox();
+    expect(box && leftBox && box.x < leftBox.x).toBeTruthy();
+
+    const noIsbn = book.locator('[data-book="bought"] .now-row').first();
+    expect(await noIsbn.evaluate((el) => el.tagName)).toBe('DIV');
+
+    const noCover = book.locator('[data-book="finished"] .now-row').nth(1);
+    await expect(noCover.locator('img')).toHaveCount(0);
+  });
+
+  test('ポッドキャストの札（番組名）は太字', async ({ page }) => {
     await page.goto('/');
     const weights = await page.locator('.now-row .now-tag').evaluateAll((els) => els.map((el) => getComputedStyle(el).fontWeight));
-    expect(weights.length).toBeGreaterThan(0);
     for (const w of weights) expect(Number(w)).toBeGreaterThanOrEqual(700);
   });
 });

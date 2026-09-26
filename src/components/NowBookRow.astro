@@ -1,0 +1,22 @@
+---
+// トップ「いま」の「本」の1行。表紙（あれば）・書名・著者・日付。
+// ISBN があれば版元ドットコムの書籍ページへ行全体をリンク（新しいタブ）、無ければリンクにしない
+import type { NowBookRow } from '../utils/nobu'
+
+interface Props {
+  book: NowBookRow
+}
+
+const { book } = Astro.props
+const Tag = book.url ? 'a' : 'div'
+const attrs = book.url ? { href: book.url, target: '_blank', rel: 'noopener noreferrer' } : {}
+---
+
+<Tag class="now-row is-book" {...attrs}>
+  {book.cover && <img class="now-cover" src={book.cover} alt="" height="48" loading="lazy" decoding="async" referrerpolicy="no-referrer" />}
+  <div class="now-left">
+    <span class="now-title">{book.title}</span>
+    {book.author && <span class="now-desc">{book.author}</span>}
+  </div>
+  {book.dateText && <span class="now-date">{book.dateText}</span>}
+</Tag>

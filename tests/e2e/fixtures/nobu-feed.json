@@ -1,37 +1,90 @@
 {
   "handle": "kechiiiiin",
-  "items": [
+  "items": [],
+  "shelf": [
     {
-      "kind": "status",
-      "label": "保留にした",
-      "to_status": "paused",
-      "day": "2026-09-27",
-      "at": "2026-09-27T03:00:00.000Z",
-      "books": [
-        {
-          "title": "CODE コードから見たコンピュータのからくり 第2版",
-          "author": "Charles Petzold/酒匂 寛",
-          "isbn13": "9784296080243",
-          "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/0243/9784296080243_1_2.jpg?_ex=600x600",
-          "cover_kind": "rakuten"
-        }
-      ]
+      "title": "福岡市の問題解決",
+      "author": "高島宗一郎",
+      "isbn13": "9784478124130",
+      "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/4130/9784478124130_1_2.jpg?_ex=600x600",
+      "cover_kind": "rakuten",
+      "status": "reading",
+      "started_on": "2026-09-22",
+      "last_read_on": "2026-09-25",
+      "finished_on": null,
+      "bought_on": "2026-08-31"
     },
     {
-      "kind": "status",
-      "label": "読了",
-      "to_status": "read",
-      "day": "2026-09-26",
-      "at": "2026-09-26T13:20:27.638Z",
-      "books": [
-        {
-          "title": "エラスティックリーダーシップ",
-          "author": "Roy Osherove/島田 浩二",
-          "isbn13": "9784873118024",
-          "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/8024/9784873118024.jpg?_ex=600x600",
-          "cover_kind": "rakuten"
-        }
-      ]
+      "title": "86-エイティシックスーEp.12 ─ホーリィ・ブルー・ブレット─",
+      "author": "安里 アサト/しらび/I-IV",
+      "isbn13": "9784049143966",
+      "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/3966/9784049143966_1_18.jpg?_ex=600x600",
+      "cover_kind": "rakuten",
+      "status": "reading",
+      "started_on": "2026-01-09",
+      "last_read_on": "2026-09-23",
+      "finished_on": null,
+      "bought_on": null
+    },
+    {
+      "title": "エラスティックリーダーシップ",
+      "author": "Roy Osherove/島田 浩二",
+      "isbn13": "9784873118024",
+      "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/8024/9784873118024.jpg?_ex=600x600",
+      "cover_kind": "rakuten",
+      "status": "read",
+      "started_on": null,
+      "last_read_on": "2026-09-26",
+      "finished_on": "2026-09-26",
+      "bought_on": "2026-08-31"
+    },
+    {
+      "title": "読書思考トレーニング",
+      "author": "中崎 倫子",
+      "isbn13": "9784480077301",
+      "cover_url": null,
+      "cover_kind": "none",
+      "status": "read",
+      "started_on": null,
+      "last_read_on": null,
+      "finished_on": "2026-09-22",
+      "bought_on": "2026-08-31"
+    },
+    {
+      "title": "人文知は武器になる",
+      "author": "山口 周/深井 龍之介",
+      "isbn13": "9784166615292",
+      "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/5292/9784166615292_1_11.jpg?_ex=600x600",
+      "cover_kind": "rakuten",
+      "status": "bought",
+      "started_on": null,
+      "last_read_on": null,
+      "finished_on": null,
+      "bought_on": "2026-09-23"
+    },
+    {
+      "title": "ゆとりの法則",
+      "author": "トム・デマルコ/伊豆原弓",
+      "isbn13": null,
+      "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/8222/82228111.jpg?_ex=600x600",
+      "cover_kind": "rakuten",
+      "status": "bought",
+      "started_on": null,
+      "last_read_on": null,
+      "finished_on": null,
+      "bought_on": "2026-09-24"
+    },
+    {
+      "title": "失敗の本質",
+      "author": "戸部良一/寺本義也/鎌田伸一/杉之尾孝生/村井友秀/野中郁次郎",
+      "isbn13": "9784122075931",
+      "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/5931/9784122075931_1_14.jpg?_ex=600x600",
+      "cover_kind": "rakuten",
+      "status": "paused",
+      "started_on": null,
+      "last_read_on": null,
+      "finished_on": null,
+      "bought_on": "2026-09-25"
     }
   ]
 }
