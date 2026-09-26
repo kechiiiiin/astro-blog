@@ -2,6 +2,7 @@
 import { fetchAllDiaries } from '../../../../lib/content';
 import DiaryPost from '../../../../layouts/DiaryPost.astro';
 import { getDateParts, matchesDateParts, isPublished } from '../../../../utils/date';
+import { fetchDiaryBooks } from '../../../../utils/nobu';
 
 export async function getStaticPaths() {
   // 下書き・未来日も含めて全件ページ化（URL直アクセスでプレビュー可能に）。
@@ -32,9 +33,12 @@ const isMicroCMS = entry.source === 'microcms';
 const htmlContent = isMicroCMS ? Content() : null;
 
 const preview = Boolean(entry.data.draft) || !isPublished(entry.data.date);
+
+// この日に NoBu で「読んだ日」を記録した本（取得はビルドで1回だけ・取れなければ空）
+const books = await fetchDiaryBooks(`${year}-${month}-${day}`);
 ---
 
-<DiaryPost entry={entry} preview={preview}>
+<DiaryPost entry={entry} preview={preview} books={books}>
   {isMicroCMS ? (
     <div set:html={htmlContent} class="microcms-content" />
   ) : (

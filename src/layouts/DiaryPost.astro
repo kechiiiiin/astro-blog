@@ -1,15 +1,19 @@
 ---
 import BaseLayout from './BaseLayout.astro'
 import ArticleContent from '../components/ArticleContent.astro';
+import DiaryBooks from '../components/DiaryBooks.astro';
+import type { DiaryBookRow } from '../utils/nobu';
 import type { UnifiedDiaryEntry } from '../lib/content'
 import { formatDisplayDate } from '../utils/date';
 
 interface Props {
   entry: UnifiedDiaryEntry
   preview?: boolean
+  /** この日に読んだ本（NoBu の「読んだ日」）。空なら欄を出さない */
+  books?: DiaryBookRow[]
 }
 
-const { entry, preview = false } = Astro.props
+const { entry, preview = false, books = [] } = Astro.props
 // weather / condition / ヘッダー写真は「かたち」モックの見た目に合わせて出さない
 // （2026-09-22 diary デザイン実装。og:image 等のメタは image をそのまま使うので heroImage 自体は残す）。
 const { title, description, date, image } = entry.data
@@ -33,6 +37,7 @@ const dateSmall = formatDisplayDate(date);
         <h1 class="page-date">{title}</h1>
         <ArticleContent class="diary-content" url={canonicalURL.href} title={title}>
           <slot />
+          <DiaryBooks slot="after" books={books} />
         </ArticleContent>
       </div>
     </div>

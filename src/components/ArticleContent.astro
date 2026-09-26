@@ -16,6 +16,8 @@ const { class: className = '', url, title } = Astro.props;
 
 <div class:list={['prose prose-lg max-w-none', className]}>
   <slot />
+  {/* 本文の直後・はてなスターの上に差し込む欄（日記の「この日に読んだ本」） */}
+  <slot name="after" />
   <HatenaStar url={url} title={title} />
 </div>
 

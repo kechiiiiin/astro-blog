@@ -1,0 +1,96 @@
+---
+// 日記の本文の直後（はてなスターの上）の「この日に読んだ本」。NoBu の「読んだ日」から。
+// 本が無ければ何も出さない（見出しも）。行は表紙（あれば）・書名・著者。
+// ISBN があれば版元ドットコムの書籍ページへ行全体をリンク（新しいタブ）、無ければリンクにしない。
+//
+// ⚠️ 日記本文（.diary-content の .prose）は img を全幅にし、a に下線と色を付けるので、
+//    表紙と行の見た目は `.diary-content .dbook …` で詳細度を上げて当てる（デザイン案のモックで実証済み）
+import type { DiaryBookRow } from '../utils/nobu'
+
+interface Props {
+  books: DiaryBookRow[]
+}
+
+const { books } = Astro.props
+---
+
+{books.length > 0 && (
+  <section class="dbook not-prose" aria-label="この日に読んだ本" data-diary-books>
+    <h2 class="dbook-head">この日に読んだ本</h2>
+    {books.map((book) => {
+      const Tag = book.url ? 'a' : 'div'
+      const attrs = book.url ? { href: book.url, target: '_blank', rel: 'noopener noreferrer' } : {}
+      return (
+        <Tag class="dbook-row" {...attrs}>
+          {book.cover && (
+            <img class="dbook-cover" src={book.cover} alt="" width="34" height="48" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+          )}
+          <span class="dbook-left">
+            <span class="dbook-title">{book.title}</span>
+            {book.author && <span class="dbook-author">{book.author}</span>}
+          </span>
+        </Tag>
+      )
+    })}
+  </section>
+)}
+
+<style>
+  :global(.dbook) {
+    margin: 40px 0 8px;
+  }
+  :global(.diary-content .dbook h2.dbook-head) {
+    font-family: var(--serif);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0;
+    line-height: 1.5;
+    padding-bottom: 8px;
+    border-bottom: 1.5px solid var(--fg);
+    letter-spacing: 0.04em;
+  }
+  :global(.diary-content .dbook .dbook-row) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit;
+  }
+  :global(.diary-content .dbook img.dbook-cover) {
+    flex-shrink: 0;
+    width: 34px;
+    height: 48px;
+    max-width: none;
+    margin: 0;
+    display: block;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    border-radius: 0;
+  }
+  :global(.dbook-left) {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  :global(.dbook-title) {
+    font-family: var(--serif);
+    font-size: 15.5px;
+    color: var(--fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  :global(.dbook-author) {
+    font-family: var(--serif);
+    font-size: 12.5px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>

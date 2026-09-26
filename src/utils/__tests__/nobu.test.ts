@@ -3,7 +3,18 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { classifyShelf, fetchNowShelf, hanmotoUrl, isShelfEmpty, jstToday, windowStart, type NobuShelfBook } from '../nobu';
+import {
+  classifyShelf,
+  diaryBooksForDay,
+  fetchDiaryBooks,
+  fetchNowShelf,
+  hanmotoUrl,
+  isShelfEmpty,
+  jstToday,
+  resetNobuFeedCache,
+  windowStart,
+  type NobuShelfBook,
+} from '../nobu';
 
 const book = (title: string, extra: Partial<NobuShelfBook> = {}): NobuShelfBook => ({
   title,
@@ -138,7 +149,10 @@ describe('classifyShelf（読んでいる／最近読み終えた／最近買っ
 });
 
 describe('fetchNowShelf（取り先・失敗時）', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetNobuFeedCache();
+  });
 
   const dir = mkdtempSync(join(tmpdir(), 'nobu-'));
   const file = join(dir, 'feed.json');
@@ -172,5 +186,95 @@ describe('fetchNowShelf（取り先・失敗時）', () => {
     expect(await fetchNowShelf('https://nobu.example/u/x/feed.json', TODAY)).toBeNull();
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network'));
     expect(await fetchNowShelf('https://nobu.example/u/x/feed.json', TODAY)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------- 日記「この日に読んだ本」
+
+const RK = 'https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/x/';
+const feedWithDays = {
+  handle: 'kechiiiiin',
+  items: [],
+  shelf: [],
+  reading_days: [
+    {
+      day: '2026-09-25',
+      books: [
+        { title: '福岡市の問題解決', author: '高島宗一郎', isbn13: '9784478124130', cover_url: `${RK}a.jpg`, cover_kind: 'rakuten' },
+        { title: 'エラスティックリーダーシップ', author: 'Roy Osherove/島田 浩二', isbn13: '9784873118024', cover_url: `${RK}b.jpg`, cover_kind: 'rakuten' },
+        // 同じ日に同じ本がもう一度（NoBu 側は UNIQUE だが念のため）
+        { title: '福岡市の問題解決', author: '高島宗一郎', isbn13: '9784478124130', cover_url: `${RK}a.jpg`, cover_kind: 'rakuten' },
+      ],
+    },
+    {
+      day: '2026-09-20',
+      books: [
+        { title: 'ISBN無し', author: null, isbn13: null, cover_url: `${RK}c.jpg`, cover_kind: 'rakuten' },
+        { title: 'ISBN無し', author: null, isbn13: null, cover_url: `${RK}c.jpg`, cover_kind: 'rakuten' },
+        { title: '表紙無し', author: '著者', isbn13: '9784480077301', cover_url: null, cover_kind: 'none' },
+        { title: '変な表紙', author: '', isbn13: 'abc', cover_url: 'javascript:alert(1)', cover_kind: 'rakuten' },
+      ],
+    },
+  ],
+};
+
+describe('diaryBooksForDay（日付 → その日に読んだ本）', () => {
+  it('その日の本を記録順に、表紙と版元ドットコムのリンクつきで', () => {
+    expect(diaryBooksForDay(feedWithDays, '2026-09-25')).toEqual([
+      { title: '福岡市の問題解決', author: '高島宗一郎', url: 'https://www.hanmoto.com/bd/isbn/9784478124130', cover: `${RK}a.jpg` },
+      { title: 'エラスティックリーダーシップ', author: 'Roy Osherove/島田 浩二', url: 'https://www.hanmoto.com/bd/isbn/9784873118024', cover: `${RK}b.jpg` },
+    ]);
+  });
+
+  it('同じ日の同じ本は1回。ISBN 無し→リンク無し、表紙無し・https 以外の表紙→null、空の著者→null', () => {
+    expect(diaryBooksForDay(feedWithDays, '2026-09-20')).toEqual([
+      { title: 'ISBN無し', author: null, url: null, cover: `${RK}c.jpg` },
+      { title: '表紙無し', author: '著者', url: 'https://www.hanmoto.com/bd/isbn/9784480077301', cover: null },
+      { title: '変な表紙', author: null, url: null, cover: null },
+    ]);
+  });
+
+  it('本の無い日は空', () => {
+    expect(diaryBooksForDay(feedWithDays, '2026-09-24')).toEqual([]);
+  });
+
+  it('古い feed.json（reading_days が無い）・形が違うものは空（落ちない）', () => {
+    expect(diaryBooksForDay({ handle: 'k', items: [], shelf: [] }, '2026-09-25')).toEqual([]);
+    expect(diaryBooksForDay(null, '2026-09-25')).toEqual([]);
+    expect(diaryBooksForDay('x', '2026-09-25')).toEqual([]);
+    expect(diaryBooksForDay({ reading_days: 'x' }, '2026-09-25')).toEqual([]);
+    expect(diaryBooksForDay({ reading_days: [null, { day: '2026-09-25' }, { day: '2026-09-25', books: [null, { title: 1 }] }] }, '2026-09-25')).toEqual([]);
+  });
+});
+
+describe('fetchDiaryBooks（1ビルドで取得は1回・失敗時は空）', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetNobuFeedCache();
+  });
+
+  it('何ページぶん呼んでも NoBu への取得は1回（トップの fetchNowShelf とも共有）', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(feedWithDays), { status: 200 }));
+    const src = 'https://nobu.example/u/k/feed.json';
+    const results = await Promise.all(['2026-09-25', '2026-09-24', '2026-09-20'].map((d) => fetchDiaryBooks(d, src)));
+    expect(results.map((r) => r.length)).toEqual([2, 0, 3]);
+    await fetchDiaryBooks('2026-09-25', src);
+    expect(await fetchNowShelf(src, '2026-09-26')).not.toBeNull();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('取れないときは空で、警告は1回だけ（取り直さない）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('no', { status: 403 }));
+    const src = 'https://nobu.example/u/k/feed.json';
+    expect(await fetchDiaryBooks('2026-09-25', src)).toEqual([]);
+    expect(await fetchDiaryBooks('2026-09-24', src)).toEqual([]);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('古い feed.json（reading_days が無い）でも空で落ちない', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ handle: 'k', items: [], shelf: [] }), { status: 200 }));
+    expect(await fetchDiaryBooks('2026-09-25', 'https://nobu.example/u/old/feed.json')).toEqual([]);
   });
 });

@@ -86,5 +86,52 @@
       "finished_on": null,
       "bought_on": "2026-09-25"
     }
+  ],
+  "reading_days": [
+    {
+      "day": "2026-09-25",
+      "books": [
+        {
+          "title": "福岡市の問題解決",
+          "author": "高島宗一郎",
+          "isbn13": "9784478124130",
+          "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/4130/9784478124130_1_2.jpg?_ex=600x600",
+          "cover_kind": "rakuten"
+        },
+        {
+          "title": "エラスティックリーダーシップ",
+          "author": "Roy Osherove/島田 浩二",
+          "isbn13": "9784873118024",
+          "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/8024/9784873118024.jpg?_ex=600x600",
+          "cover_kind": "rakuten"
+        }
+      ]
+    },
+    {
+      "day": "2026-09-23",
+      "books": [
+        {
+          "title": "86-エイティシックスーEp.12 ─ホーリィ・ブルー・ブレット─",
+          "author": "安里 アサト/しらび/I-IV",
+          "isbn13": "9784049143966",
+          "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/3966/9784049143966_1_18.jpg?_ex=600x600",
+          "cover_kind": "rakuten"
+        },
+        {
+          "title": "ゆとりの法則",
+          "author": "トム・デマルコ/伊豆原弓",
+          "isbn13": null,
+          "cover_url": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/8222/82228111.jpg?_ex=600x600",
+          "cover_kind": "rakuten"
+        },
+        {
+          "title": "読書思考トレーニング",
+          "author": "中崎 倫子",
+          "isbn13": "9784480077301",
+          "cover_url": null,
+          "cover_kind": "none"
+        }
+      ]
+    }
   ]
 }

@@ -140,7 +140,7 @@ async function describeFailure(res: Response): Promise<string> {
 }
 
 /** http(s) は fetch、それ以外（パス・file://）は手元のファイルとして読む */
-async function loadFeed(src: string): Promise<unknown> {
+async function loadFeedUncached(src: string): Promise<unknown> {
   if (/^https?:\/\//.test(src)) {
     const res = await fetch(src, { headers: { Accept: 'application/json' } });
     if (!res.ok) throw new Error(`HTTP ${res.status} ${await describeFailure(res)}`);
@@ -148,6 +148,29 @@ async function loadFeed(src: string): Promise<unknown> {
   }
   const path = src.startsWith('file://') ? fileURLToPath(src) : src;
   return JSON.parse(await readFile(path, 'utf8'));
+}
+
+// 1ビルドで NoBu への取得は1回だけ（取り先ごと）。日記ページは200件以上あり、トップとも同じ feed.json を使う。
+// 失敗も覚えておく（ページごとに取り直して NoBu を叩き続けない・失敗のログも1回で済ませる）
+const feedCache = new Map<string, Promise<unknown>>();
+/** 日記の取得失敗を警告した取り先（200ページぶん同じ警告を出さない） */
+const diaryWarned = new Set<string>();
+
+function loadFeed(src: string): Promise<unknown> {
+  let p = feedCache.get(src);
+  if (!p) {
+    p = loadFeedUncached(src);
+    // 誰も待っていない間に失敗しても unhandled rejection にしない（待つ側には失敗がそのまま届く）
+    p.catch(() => {});
+    feedCache.set(src, p);
+  }
+  return p;
+}
+
+/** テスト用: 取得のキャッシュを空にする */
+export function resetNobuFeedCache(): void {
+  feedCache.clear();
+  diaryWarned.clear();
 }
 
 function hasShelf(v: unknown): v is { shelf: NobuShelfBook[] } {
@@ -166,5 +189,76 @@ export async function fetchNowShelf(
   } catch (e) {
     console.warn('[nobu] 読書記録の取得に失敗したため「いま」の「本」を出しません:', src, e instanceof Error ? e.message : e);
     return null;
+  }
+}
+
+// ---------------------------------------------------------------- 日記「この日に読んだ本」
+//
+// 各日記ページの本文の直後に、その日に NoBu で「読んだ日」を記録した本を並べる（読了・読み始めた・買ったは載せない）。
+// 元は feed.json の reading_days（読んだ日の全履歴・NoBu 側で is_public = 1 に絞ってある）。
+// 古い feed.json（reading_days が無い）や取得失敗のときは空＝本欄を出さないだけで、ビルドは落とさない。
+
+export interface DiaryBookRow {
+  title: string;
+  author: string | null;
+  /** 版元ドットコムの書籍ページ。ISBN が無ければ null（行をリンクにしない） */
+  url: string | null;
+  /** 表紙。無ければ null（画像を出さない） */
+  cover: string | null;
+}
+
+interface RawBook {
+  title?: unknown;
+  author?: unknown;
+  isbn13?: unknown;
+  cover_url?: unknown;
+}
+
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
+
+/**
+ * feed.json から、その日（JST YYYY-MM-DD）に読んだ本の行を並べる。純粋関数。
+ * 並びは feed.json の順（NoBu の記録順）。同じ日に同じ本が重なったら1回（ISBN、無ければ書名＋著者で見る）。
+ * reading_days が無い・形が違うときは空。
+ */
+export function diaryBooksForDay(feed: unknown, day: string): DiaryBookRow[] {
+  if (typeof feed !== 'object' || feed === null) return [];
+  const days = (feed as { reading_days?: unknown }).reading_days;
+  if (!Array.isArray(days)) return [];
+  const out: DiaryBookRow[] = [];
+  const seen = new Set<string>();
+  for (const d of days) {
+    if (typeof d !== 'object' || d === null || (d as { day?: unknown }).day !== day) continue;
+    const books = (d as { books?: unknown }).books;
+    if (!Array.isArray(books)) continue;
+    for (const raw of books as RawBook[]) {
+      const title = str(raw?.title);
+      if (!title) continue;
+      const author = str(raw.author);
+      const isbn = str(raw.isbn13);
+      const key = isbn ? `isbn:${isbn.replace(/[-\s]/g, '')}` : `t:${title}\u0000${author ?? ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const cover = str(raw.cover_url);
+      out.push({ title, author, url: hanmotoUrl(isbn), cover: cover && /^https:\/\//.test(cover) ? cover : null });
+    }
+  }
+  return out;
+}
+
+
+/** 日記ページ用。その日に読んだ本（無ければ・取れなければ空）。取得はビルドで1回だけ */
+export async function fetchDiaryBooks(
+  day: string,
+  src: string = process.env.NOBU_FEED_URL || NOBU_FEED_URL_DEFAULT,
+): Promise<DiaryBookRow[]> {
+  try {
+    return diaryBooksForDay(await loadFeed(src), day);
+  } catch (e) {
+    if (!diaryWarned.has(src)) {
+      diaryWarned.add(src);
+      console.warn('[nobu] 読書記録の取得に失敗したため日記の「この日に読んだ本」を出しません:', src, e instanceof Error ? e.message : e);
+    }
+    return [];
   }
 }
