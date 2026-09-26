@@ -10,7 +10,10 @@ import { formatDisplayDate, getDateParts } from './date';
 // （絶対／相対パス・file:// URL）も読める——NoBu をデプロイせずにローカルで見た目を確かめるため。
 // 「今日」は既定でビルドした日（JST）。NOBU_TODAY=YYYY-MM-DD で固定できる（E2E・確認用）。
 
-export const NOBU_FEED_URL_DEFAULT = 'https://nobu.kechiiiiin.com/u/kechiiiiin/feed.json';
+// 既定は workers.dev から取る。nobu.kechiiiiin.com だと GitHub Actions からは Cloudflare の
+// ボット対策（cf-mitigated=challenge）で 403 になるため（2026-09-26）。NoBu 側は workers.dev では
+// フィード2本以外を 404 にしている
+export const NOBU_FEED_URL_DEFAULT = 'https://nobu.kechiiiiin.workers.dev/u/kechiiiiin/feed.json';
 
 /** 1週間＝今日（JST）を含む7日間 */
 export const SHELF_WINDOW_DAYS = 7;
