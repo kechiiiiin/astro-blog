@@ -89,5 +89,8 @@ export default defineConfig({
     // 既存サーバーを流用しない（古い dist や dev サーバーを掴まないため）
     reuseExistingServer: false,
     timeout: 180 * 1000, // 3分（ビルド時間を含む）
+    // トップ「いま」の BOOK 行は NoBu の公開 JSON をビルド時に読む。E2E は手元の固定データで見る
+    // （本番の読書記録は日々変わるので、テストの結果を左右させない）
+    env: { NOBU_FEED_URL: 'tests/e2e/fixtures/nobu-feed.json' },
   },
 });

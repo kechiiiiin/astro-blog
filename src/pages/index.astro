@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import { fetchAllBlogs, fetchAllDiaries } from '../lib/content'
 import { filterPosts, filterDiaries } from '../utils/posts'
 import { fetchAllPodcastFeeds } from '../utils/podcast'
+import { fetchLatestBook } from '../utils/nobu'
 import { formatDisplayDate, getDiaryPath } from '../utils/date'
 import { siteConfig } from '../config'
 
@@ -29,6 +30,12 @@ try {
 } catch (e) {
   console.warn('[index] podcast RSS の取得に失敗したため「いま」から外します', e)
 }
+
+// 読書は NoBu の公開 JSON から最新の出来事1件（保留を除く）。取れなければ BOOK 行を出さない
+const latestBook = await fetchLatestBook()
+// 版元ドットコムの書籍ページへ（新しいタブ）。ISBN が無い本はリンクにしない
+const BookRow = latestBook?.url ? 'a' : 'div'
+const bookRowAttrs = latestBook?.url ? { href: latestBook.url, target: '_blank', rel: 'noopener noreferrer' } : {}
 
 const sitemap = [
   { href: '/profile/', text: 'プロフィール', desc: '自己紹介' },
@@ -82,10 +89,22 @@ const sitemap = [
     </a>
   ))}
 
+  {latestBook && (
+    <BookRow class="now-row is-book" {...bookRowAttrs}>
+      {latestBook.cover && <img class="now-cover" src={latestBook.cover} alt="" height="48" loading="lazy" decoding="async" referrerpolicy="no-referrer" />}
+      <div class="now-left">
+        <span class="now-tag">BOOK・{latestBook.label}</span>
+        <span class="now-title">{latestBook.title}</span>
+        {latestBook.author && <span class="now-desc">{latestBook.author}</span>}
+      </div>
+      <span class="now-date">{formatDisplayDate(latestBook.date)}</span>
+    </BookRow>
+  )}
+
   <h2 class="section-head">サイトマップ</h2>
-  <ul class="plainlist">
+  <ul class="plainlist sitemap-list">
     {sitemap.map(({ href, text, desc }) => (
-      <li><a href={href}>{text}</a><span class="desc">{desc}</span></li>
+      <li><a href={href}>{text}<span class="desc">{desc}</span></a></li>
     ))}
   </ul>
 </BaseLayout>
