@@ -1,38 +1,35 @@
 #!/usr/bin/env node
-// 新規追加された日記エントリを X（Twitter）へ自動投稿する。
+// 新規追加された日記エントリの「X 投稿画面リンク（Web Intent）」を Discord へ送る。
 //
 // GitHub Actions の deploy ワークフローから、デプロイ成功後に呼ばれる。
 // BEFORE_SHA..AFTER_SHA の差分で「追加された」日記ファイルだけを拾うので、
-// update(diary): / delete(diary): のコミットでは何も投稿しない（重複投稿の防止）。
-// 日付を変えただけの日記（同じ commit で公開済みの日記を消して足したもの）も投稿しない
+// update(diary): / delete(diary): のコミットでは何も送らない（重複防止）。
+// 日付を変えただけの日記（同じ commit で公開済みの日記を消して足したもの）も送らない
 // （excludeMovedDiaries。かけら帳の move(diary): や GitHub の画面での改名）。
 //
+// 2026-09-27: 以前は X API（OAuth 1.0a・$0.20/件）で直接投稿していたが、費用ゼロ化のため
+// 投稿画面リンクを Discord に送るだけにした。開いて「ポスト」を押すのは Keisuke 自身。
+//
 // 必要な環境変数:
-//   X_API_KEY / X_API_SECRET / X_ACCESS_TOKEN / X_ACCESS_TOKEN_SECRET  … OAuth 1.0a user context
+//   DISCORD_DEPLOY_WEBHOOK_URL … 送り先（既存の deploy 通知と共用。新しい secret は作らない）
 //   BEFORE_SHA / AFTER_SHA … 差分の範囲（push イベントの github.event.before / github.sha）
 //   SITE_URL   … 省略時 https://www.kechiiiiin.com
-//   FORCE_FILE … 指定すると差分を見ずにそのファイルだけ投稿する（再投稿用・BEFORE_SHA 不要）
-//   DRY_RUN=1  … 本文を組み立てて表示するだけで HTTP は投げない
+//   FORCE_FILE … 指定すると差分を見ずにそのファイルだけ対象にする（送り直し用・BEFORE_SHA 不要）
+//   DRY_RUN=1  … Discord へ送らず、送る予定の JSON を標準出力するだけ
 
-import { randomBytes } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
   parseFrontmatter,
   getDiaryPath,
   isPublished,
-  composeText,
-  buildAuthHeader,
+  buildDiaryDiscordPayload,
   excludeMovedDiaries,
-} from './lib/x-post.mjs';
+} from './lib/diary-post.mjs';
 
-const X_TWEETS_ENDPOINT = 'https://api.x.com/2/tweets';
 const DIARY_DIR = 'src/content/diary/';
 
 const {
-  X_API_KEY = '',
-  X_API_SECRET = '',
-  X_ACCESS_TOKEN = '',
-  X_ACCESS_TOKEN_SECRET = '',
+  DISCORD_DEPLOY_WEBHOOK_URL = '',
   BEFORE_SHA = '',
   AFTER_SHA = '',
   SITE_URL = 'https://www.kechiiiiin.com',
@@ -59,20 +56,19 @@ function git(args) {
 }
 
 async function main() {
-  // 認証情報が揃っていなければ黙って（notice だけ残して）スキップ。
+  // webhook URL が無ければ黙って（notice だけ残して）スキップ。
   // シークレット未設定の環境でデプロイを失敗させないための逃げ道。
-  const creds = [X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET];
-  if (!dryRun && creds.some((c) => !c)) {
-    notice('X への投稿をスキップしました（X_* シークレットが未設定）');
+  if (!dryRun && !DISCORD_DEPLOY_WEBHOOK_URL) {
+    notice('日記の投稿リンク送信をスキップしました（DISCORD_DEPLOY_WEBHOOK_URL が未設定）');
     return 0;
   }
 
   const added = FORCE_FILE ? [FORCE_FILE.trim()] : await listAddedDiaries();
   if (added === null) return 1;
-  if (FORCE_FILE) notice(`FORCE_FILE 指定のため ${FORCE_FILE} を投稿します`);
+  if (FORCE_FILE) notice(`FORCE_FILE 指定のため ${FORCE_FILE} を送り直します`);
 
   if (added.length === 0) {
-    notice('新規の日記エントリはありませんでした（X への投稿なし）');
+    notice('新規の日記エントリはありませんでした（投稿リンク送信なし）');
     return 0;
   }
 
@@ -107,15 +103,15 @@ async function main() {
     }
 
     const url = `${SITE_URL.replace(/\/$/, '')}${getDiaryPath(date)}`;
-    posts.push({ path, text: composeText(fm.title, url) });
+    posts.push({ path, title: fm.title, url });
   }
 
   if (posts.length === 0) {
-    notice('投稿対象の日記はありませんでした');
+    notice('送信対象の日記はありませんでした');
     return 0;
   }
 
-  return (await postAll(posts)) ? 0 : 1;
+  return (await sendAll(posts)) ? 0 : 1;
 }
 
 /**
@@ -125,17 +121,17 @@ async function main() {
 async function listAddedDiaries() {
   // 初回 push や workflow_dispatch では before が空／全ゼロになり差分が取れない
   if (!BEFORE_SHA || /^0+$/.test(BEFORE_SHA)) {
-    notice('X への投稿をスキップしました（BEFORE_SHA が無いため差分を取得できません）');
+    notice('投稿リンク送信をスキップしました（BEFORE_SHA が無いため差分を取得できません）');
     return [];
   }
   if (!AFTER_SHA) {
-    notice('X への投稿をスキップしました（AFTER_SHA が未設定）');
+    notice('投稿リンク送信をスキップしました（AFTER_SHA が未設定）');
     return [];
   }
 
   // ⚠️ A の判定は git の既定の rename 検出に頼っている（似た中身の改名は R になり A に出ない）。
   // 本文が大きく変わった改名は A に出るので、下の excludeMovedDiaries で移動を除く。
-  // ここに --no-renames は付けない（rename 検出も再投稿を防ぐ一段なので）。
+  // ここに --no-renames は付けない（rename 検出も再送防止の一段なので）。
   const diffOut = git([
     'diff',
     '--diff-filter=A',
@@ -172,63 +168,44 @@ async function listAddedDiaries() {
     },
     existedAtBase: (path) => git(['cat-file', '-e', `${BEFORE_SHA}:${path}`]) !== null,
   });
-  for (const m of moved) notice(`${m.path} は ${m.from} から日付を変えただけなので X には投稿しません`);
+  for (const m of moved) notice(`${m.path} は ${m.from} から日付を変えただけなので送りません`);
   for (const p of unknown) {
-    error(`${p} が移動かどうか git で確かめられなかったため投稿しません（新しい日記なら x_post_file で投稿し直してください）`);
+    error(`${p} が移動かどうか git で確かめられなかったため送りません（新しい日記なら x_post_file で送り直してください）`);
   }
   return post;
 }
 
-/** 組み立てた本文を順に投稿する。1件でも失敗したら全件試したうえで exit 1。 */
-async function postAll(posts) {
+/** 組み立てた Discord ペイロードを1件ずつ送る。1件でも失敗したら全件試したうえで exit 1。 */
+async function sendAll(posts) {
   let failed = false;
-  for (const { path, text } of posts) {
+  for (const { path, title, url } of posts) {
+    const payload = buildDiaryDiscordPayload(title, url);
     if (dryRun) {
       console.log(`--- DRY RUN: ${path} ---`);
-      console.log(text);
-      console.log(`--- (${[...text].length} 文字) ---`);
+      console.log(JSON.stringify(payload, null, 2));
       continue;
     }
-    const ok = await postTweet(text, path);
+    const ok = await sendToDiscord(payload, path);
     if (!ok) failed = true;
   }
   return !failed;
 }
 
-async function postTweet(text, path) {
-  const authorization = buildAuthHeader({
+async function sendToDiscord(payload, path) {
+  const res = await fetch(DISCORD_DEPLOY_WEBHOOK_URL, {
     method: 'POST',
-    url: X_TWEETS_ENDPOINT,
-    consumerKey: X_API_KEY,
-    consumerSecret: X_API_SECRET,
-    token: X_ACCESS_TOKEN,
-    tokenSecret: X_ACCESS_TOKEN_SECRET,
-    nonce: randomBytes(32).toString('hex'),
-    timestamp: Math.floor(Date.now() / 1000),
-    // JSON ボディのパラメータは OAuth 1.0a の署名対象に含めない
-    extraParams: {},
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
   });
-
-  const res = await fetch(X_TWEETS_ENDPOINT, {
-    method: 'POST',
-    headers: { authorization, 'content-type': 'application/json' },
-    body: JSON.stringify({ text }),
-  });
-  const body = await res.text();
 
   if (!res.ok) {
-    // シークレットは本文にもヘッダにも出さない（body は X からのレスポンスのみ）
-    error(`X への投稿に失敗しました (${path}): status=${res.status} body=${body}`);
+    const body = await res.text();
+    // webhook URL は本文にもログにも出さない（body は Discord からのレスポンスのみ）
+    error(`日記の投稿リンク送信に失敗しました (${path}): status=${res.status} body=${body}`);
     return false;
   }
 
-  let id = '(unknown)';
-  try {
-    id = JSON.parse(body)?.data?.id ?? id;
-  } catch {
-    /* JSON でなくても致命ではない */
-  }
-  console.log(`X へ投稿しました (${path}): status=${res.status} id=${id}`);
+  console.log(`日記の投稿リンクを Discord に送りました (${path})`);
   return true;
 }
 

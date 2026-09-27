@@ -1,8 +1,10 @@
-// 日記の X（Twitter）自動投稿で使う純粋関数群。
-// 依存は node:crypto のみ。テスト（scripts/post-diary-to-x.test.ts）から直接叩けるように
-// 副作用のある処理（git / fetch）は post-diary-to-x.mjs 側に置いている。
-
-import { createHmac } from 'node:crypto';
+// 日記を X（Twitter）へ投稿するためのリンクを組み立てる純粋関数群。
+// 依存なし。テスト（scripts/post-diary-link-to-discord.test.ts）から直接叩けるように
+// 副作用のある処理（git / fetch）は post-diary-link-to-discord.mjs 側に置いている。
+//
+// 2026-09-27: X API（有料 $0.20/件）での自動投稿をやめ、Web Intent リンクを
+// Discord へ送るだけにした（費用ゼロ化）。OAuth 1.0a 署名まわりの関数は
+// 不要になったため削除した（X の投稿エンドポイントへの直接呼び出しはもうしない。git 履歴に残る）。
 
 // ---------------------------------------------------------------------------
 // 投稿テンプレート
@@ -31,6 +33,37 @@ export function composeText(title, url) {
   const finalTitle =
     chars.length <= available ? title : chars.slice(0, Math.max(0, available - 1)).join('') + '…';
   return POST_TEMPLATE(finalTitle, url);
+}
+
+// ---------------------------------------------------------------------------
+// X の投稿画面リンク（Web Intent）と Discord への通知
+// ---------------------------------------------------------------------------
+
+/**
+ * X の投稿画面をあらかじめ本文入りで開く Web Intent リンク。
+ * これを開いて「ポスト」を押すだけで投稿できる（API を叩かないので無料）。
+ */
+export function buildIntentUrl(title, url) {
+  return `https://x.com/intent/post?text=${encodeURIComponent(composeText(title, url))}`;
+}
+
+/**
+ * Discord へ送る embed 1件分のペイロード。
+ * タイトルに引用符・日本語が入りうるので、呼び出し側で文字列連結せずこの関数（＝JS の
+ * テンプレートリテラル）で組み立てる。
+ */
+export function buildDiaryDiscordPayload(title, url) {
+  const intentUrl = buildIntentUrl(title, url);
+  return {
+    embeds: [
+      {
+        title: '📝 日記を X に投稿する',
+        url: intentUrl,
+        description: `「${title}」\n開いて「ポスト」を押すだけです\n${url}`,
+        color: 3066993,
+      },
+    ],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -175,85 +208,4 @@ function traceMove(path, git, seen) {
     else if (r) return r;
   }
   return sawUnknown ? 'unknown' : null;
-}
-
-// ---------------------------------------------------------------------------
-// OAuth 1.0a（HMAC-SHA1・user context）
-// ---------------------------------------------------------------------------
-
-/** RFC 3986 準拠のパーセントエンコード（encodeURIComponent が残す !*'() も潰す）。 */
-export function percentEncode(str) {
-  return encodeURIComponent(str).replace(
-    /[!*'()]/g,
-    (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase()
-  );
-}
-
-/**
- * 署名ベース文字列を組み立てる。
- * params には oauth_* に加え、クエリ／フォームパラメータを混ぜて渡す
- * （X の "Creating a signature" のサンプル検証用。実際の v2 呼び出しでは
- *   JSON ボディは署名対象外なので空になる）。
- */
-export function buildSignatureBaseString(method, url, params) {
-  const base = url.split('?')[0];
-  const paramString = Object.entries(params)
-    .map(([k, v]) => [percentEncode(k), percentEncode(String(v))])
-    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0))
-    .map(([k, v]) => `${k}=${v}`)
-    .join('&');
-  return `${method.toUpperCase()}&${percentEncode(base)}&${percentEncode(paramString)}`;
-}
-
-/** 署名鍵は enc(consumerSecret)&enc(tokenSecret)。 */
-export function buildSigningKey(consumerSecret, tokenSecret) {
-  return `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`;
-}
-
-/** HMAC-SHA1 で署名（base64）。 */
-export function signRequest({ method, url, params = {}, consumerSecret, tokenSecret }) {
-  const baseString = buildSignatureBaseString(method, url, params);
-  return createHmac('sha1', buildSigningKey(consumerSecret, tokenSecret))
-    .update(baseString)
-    .digest('base64');
-}
-
-/**
- * Authorization: OAuth ... ヘッダの値を組み立てる。
- * extraParams は署名にだけ混ぜ、ヘッダには oauth_* のみを載せる。
- */
-export function buildAuthHeader({
-  method,
-  url,
-  consumerKey,
-  consumerSecret,
-  token,
-  tokenSecret,
-  nonce,
-  timestamp,
-  extraParams = {},
-}) {
-  const oauth = {
-    oauth_consumer_key: consumerKey,
-    oauth_nonce: nonce,
-    oauth_signature_method: 'HMAC-SHA1',
-    oauth_timestamp: String(timestamp),
-    oauth_token: token,
-    oauth_version: '1.0',
-  };
-  const signature = signRequest({
-    method,
-    url,
-    params: { ...oauth, ...extraParams },
-    consumerSecret,
-    tokenSecret,
-  });
-  const all = { ...oauth, oauth_signature: signature };
-  return (
-    'OAuth ' +
-    Object.keys(all)
-      .sort()
-      .map((k) => `${percentEncode(k)}="${percentEncode(all[k])}"`)
-      .join(', ')
-  );
 }

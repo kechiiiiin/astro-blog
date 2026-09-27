@@ -5,12 +5,10 @@ import {
   isPublished,
   composeText,
   POST_TEMPLATE,
-  percentEncode,
-  buildSignatureBaseString,
-  signRequest,
-  buildAuthHeader,
+  buildIntentUrl,
+  buildDiaryDiscordPayload,
   excludeMovedDiaries,
-} from './lib/x-post.mjs';
+} from './lib/diary-post.mjs';
 import { getDiaryPath as getDiaryPathTs } from '../src/utils/date';
 
 describe('parseFrontmatter', () => {
@@ -114,94 +112,45 @@ describe('composeText', () => {
   });
 });
 
-describe('OAuth 1.0a', () => {
-  // X 公式ドキュメント "Creating a signature" のワークサンプル
-  const sample = {
-    method: 'POST',
-    url: 'https://api.twitter.com/1.1/statuses/update.json',
-    consumerKey: 'xvz1evFS4wEEPTGEFPHBog',
-    consumerSecret: 'kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw',
-    token: '370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb',
-    tokenSecret: 'LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE',
-    nonce: 'kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg',
-    timestamp: 1318622958,
-    extraParams: {
-      include_entities: 'true',
-      status: 'Hello Ladies + Gentlemen, a signed OAuth request!',
-    },
-  };
-
-  it('percentEncode が RFC 3986 準拠', () => {
-    expect(percentEncode('Ladies + Gentlemen')).toBe('Ladies%20%2B%20Gentlemen');
-    expect(percentEncode("!*'()")).toBe('%21%2A%27%28%29');
-    expect(percentEncode('An encoded string!')).toBe('An%20encoded%20string%21');
+describe('buildIntentUrl（X の投稿画面リンク）', () => {
+  it('composeText と同じ本文を x.com/intent/post の text= に載せる', () => {
+    const title = 'GitHubアカウントを移行した';
+    const url = 'https://www.kechiiiiin.com/diary/2026/07/29/';
+    const intentUrl = buildIntentUrl(title, url);
+    expect(intentUrl.startsWith('https://x.com/intent/post?text=')).toBe(true);
+    const text = decodeURIComponent(intentUrl.slice('https://x.com/intent/post?text='.length));
+    expect(text).toBe(composeText(title, url));
+    expect(text).toBe('日記\nhttps://www.kechiiiiin.com/diary/2026/07/29/');
   });
 
-  it('署名ベース文字列が公式サンプルと一致する', () => {
-    const params = {
-      oauth_consumer_key: sample.consumerKey,
-      oauth_nonce: sample.nonce,
-      oauth_signature_method: 'HMAC-SHA1',
-      oauth_timestamp: String(sample.timestamp),
-      oauth_token: sample.token,
-      oauth_version: '1.0',
-      ...sample.extraParams,
-    };
-    expect(buildSignatureBaseString(sample.method, sample.url, params)).toBe(
-      'POST&https%3A%2F%2Fapi.twitter.com%2F1.1%2Fstatuses%2Fupdate.json&include_entities%3Dtrue%26' +
-        'oauth_consumer_key%3Dxvz1evFS4wEEPTGEFPHBog%26' +
-        'oauth_nonce%3DkYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg%26' +
-        'oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1318622958%26' +
-        'oauth_token%3D370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb%26' +
-        'oauth_version%3D1.0%26status%3DHello%2520Ladies%2520%252B%2520Gentlemen%252C%2520a%2520signed%2520OAuth%2520request%2521'
-    );
+  it('引用符・改行を含むタイトルでも正しくエンコードされる（デコードで元の本文に戻る）', () => {
+    const title = '「移行」めんどー\nすぎる';
+    const url = 'https://www.kechiiiiin.com/diary/2026/09/26/';
+    const intentUrl = buildIntentUrl(title, url);
+    const text = decodeURIComponent(intentUrl.slice('https://x.com/intent/post?text='.length));
+    expect(text).toBe(composeText(title, url));
+  });
+});
+
+describe('buildDiaryDiscordPayload（Discord へ送る embed）', () => {
+  it('title に intent リンク、description にタイトルと URL を載せる', () => {
+    const title = '53km歩いた';
+    const url = 'https://www.kechiiiiin.com/diary/2026/09/26/';
+    const payload = buildDiaryDiscordPayload(title, url);
+    expect(payload.embeds).toHaveLength(1);
+    const embed = payload.embeds[0];
+    expect(embed.title).toBe('📝 日記を X に投稿する');
+    expect(embed.url).toBe(buildIntentUrl(title, url));
+    expect(embed.description).toBe(`「${title}」\n開いて「ポスト」を押すだけです\n${url}`);
   });
 
-  it('署名が公式サンプルの期待値と一致する', () => {
-    const params = {
-      oauth_consumer_key: sample.consumerKey,
-      oauth_nonce: sample.nonce,
-      oauth_signature_method: 'HMAC-SHA1',
-      oauth_timestamp: String(sample.timestamp),
-      oauth_token: sample.token,
-      oauth_version: '1.0',
-      ...sample.extraParams,
-    };
-    expect(
-      signRequest({
-        method: sample.method,
-        url: sample.url,
-        params,
-        consumerSecret: sample.consumerSecret,
-        tokenSecret: sample.tokenSecret,
-      })
-    ).toBe('hCtSmYh+iHYCEqBWrE7C7hYmtUk=');
-  });
-
-  it('buildAuthHeader が同じ署名を載せ、oauth_* のみを出力する', () => {
-    const header = buildAuthHeader(sample);
-    expect(header.startsWith('OAuth ')).toBe(true);
-    expect(header).toContain('oauth_signature="hCtSmYh%2BiHYCEqBWrE7C7hYmtUk%3D"');
-    expect(header).toContain('oauth_consumer_key="xvz1evFS4wEEPTGEFPHBog"');
-    // フォーム／クエリのパラメータはヘッダには載らない
-    expect(header).not.toContain('status=');
-    expect(header).not.toContain('include_entities');
-  });
-
-  it('実際の v2 呼び出し（JSON ボディ・extraParams なし）でもヘッダが組める', () => {
-    const header = buildAuthHeader({
-      method: 'POST',
-      url: 'https://api.x.com/2/tweets',
-      consumerKey: 'ck',
-      consumerSecret: 'cs',
-      token: 'tk',
-      tokenSecret: 'ts',
-      nonce: 'nonce',
-      timestamp: 1700000000,
-    });
-    expect(header).toMatch(/^OAuth oauth_consumer_key="ck", /);
-    expect(header).toContain('oauth_signature=');
-    expect(header).toContain('oauth_signature_method="HMAC-SHA1"');
+  it('引用符・日本語を含むタイトルでも壊れずに JSON化できる', () => {
+    const title = '「引用符」入りのタイトル';
+    const url = 'https://www.kechiiiiin.com/diary/2026/01/02/';
+    const payload = buildDiaryDiscordPayload(title, url);
+    const json = JSON.stringify(payload);
+    const parsed = JSON.parse(json);
+    expect(parsed.embeds[0].description).toContain(title);
   });
 });
 
