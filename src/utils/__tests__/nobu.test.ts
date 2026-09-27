@@ -76,6 +76,22 @@ describe('classifyShelf（読んでいる／最近読み終えた／最近買っ
     expect(s.reading[1]!.dateText).toBe('2026-09-22 (火)〜');
   });
 
+  it('深めてる（digesting）は読了扱い: 「読み終えた」に残り、読了日で並ぶ', () => {
+    const s = classifyShelf(
+      [
+        book('今週読了して深めてる', { status: 'digesting', finished_on: '2026-09-24', bought_on: '2026-09-21' }),
+        book('今週読了', { status: 'read', finished_on: '2026-09-23' }),
+        book('深めてるが読了は先週', { status: 'digesting', finished_on: '2026-09-10' }),
+      ],
+      TODAY,
+    );
+    expect(titles(s.finished)).toEqual(['今週読了して深めてる', '今週読了']);
+    expect(s.finished[0]!.dateText).toBe('2026-09-24 (木)');
+    // 読み終えたに入った本は「買った」に重ねて出さない
+    expect(titles(s.bought)).toEqual([]);
+    expect(titles(s.reading)).toEqual([]);
+  });
+
   it('窓の端: 7日前（6日前まで入る）', () => {
     const s = classifyShelf(
       [book('6日前', { status: 'read', finished_on: '2026-09-20' }), book('7日前', { status: 'read', finished_on: '2026-09-19' })],

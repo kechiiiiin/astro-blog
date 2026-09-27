@@ -18,14 +18,14 @@ export const NOBU_FEED_URL_DEFAULT = 'https://nobu.kechiiiiin.workers.dev/u/kech
 /** 1週間＝今日（JST）を含む7日間 */
 export const SHELF_WINDOW_DAYS = 7;
 
-/** feed.json の shelf の1冊（NoBu 側で is_public = 1・読んでる／読了／買った・直近31日に動きがあるものに絞ってある） */
+/** feed.json の shelf の1冊（NoBu 側で is_public = 1・読んでる／読了／深めてる／買った・直近31日に動きがあるものに絞ってある） */
 export interface NobuShelfBook {
   title: string;
   author: string | null;
   isbn13: string | null;
   cover_url: string | null;
   cover_kind: string;
-  /** want / bought / reading / paused / read */
+  /** want / bought / reading / paused / read / digesting（深めてる＝読了の後、2026-09-27） */
   status: string;
   /** 読書中の回の読み始めた日（JST YYYY-MM-DD） */
   started_on: string | null;
@@ -92,6 +92,7 @@ const newest = (...days: (string | null)[]) => days.filter((d): d is string => B
 /**
  * 3区分に分ける。どれも today を含む7日間。同じ本は上の区分を優先（読んでいる > 読み終えた > 買った）。
  * 保留（paused）・気になる（want）は出さない。並びは各区分とも新しい順。
+ * 深めてる（digesting）は読了扱い（読み終えた本の理解を深めている段階なので、「読み終えた」から消さない）。
  */
 export function classifyShelf(shelf: NobuShelfBook[], today: string, days = SHELF_WINDOW_DAYS): NowShelf {
   const since = windowStart(today, days);
@@ -105,7 +106,7 @@ export function classifyShelf(shelf: NobuShelfBook[], today: string, days = SHEL
   reading.forEach((b) => used.add(b));
 
   const finished = visible
-    .filter((b) => !used.has(b) && inWindow(b.finished_on))
+    .filter((b) => !used.has(b) && inWindow(b.finished_on)) // 読了・深めてるの区別はしない（どちらも読了日で数える）
     .sort((a, b) => b.finished_on!.localeCompare(a.finished_on!));
   finished.forEach((b) => used.add(b));
 
