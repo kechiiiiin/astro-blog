@@ -44,6 +44,38 @@ const dateSmall = formatDisplayDate(date);
   </article>
 </BaseLayout>
 
+<script>
+  // 縦に長い画像（高さ÷幅 > 2）は横幅と同じ高さで切り、下を薄くして「全体を見る」を出す。
+  // 日記の縦長画像設計（2026-10-12）。リンクカード・時刻の小見出しは対象外（本文の p 直下の img だけ）。
+  // 判定は読み込み後の実寸で行う。JS が動かない環境では今どおり全体が出る。
+  function clipTall(img: HTMLImageElement) {
+    if (img.dataset.tallChecked) return
+    const w = img.naturalWidth
+    const h = img.naturalHeight
+    if (!w || !h) return
+    img.dataset.tallChecked = '1'
+    if (h / w <= 2) return
+    const target = img.parentElement?.tagName === 'A' ? img.parentElement : img
+    const p = target.parentElement
+    if (!p || p.tagName !== 'P' || p.closest('.link-card')) return
+    const wrap = document.createElement('span')
+    wrap.className = 'tall-img'
+    p.insertBefore(wrap, target)
+    wrap.appendChild(target)
+    const more = document.createElement('a')
+    more.className = 'tall-img-more'
+    more.href = img.currentSrc || img.src
+    more.target = '_blank'
+    more.rel = 'noopener'
+    more.textContent = '全体を見る'
+    wrap.appendChild(more)
+  }
+  document.querySelectorAll<HTMLImageElement>('.diary-content p img').forEach((img) => {
+    if (img.complete) clipTall(img)
+    else img.addEventListener('load', () => clipTall(img), { once: true })
+  })
+</script>
+
 <style>
   /* ネストしたulの上下マージンを除去（日記専用） */
   :global(.diary-content .prose li ul) {
@@ -170,6 +202,44 @@ const dateSmall = formatDisplayDate(date);
     border-radius: 2px;
     background: var(--soft);
     margin: 0;
+  }
+
+  /* 縦長の画像（上の script が .tall-img で包む）。横幅と同じ高さで切り、下を背景色へ薄くする */
+  :global(.diary-content .tall-img) {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+  }
+  :global(.diary-content .tall-img::after) {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 30%;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+  }
+  :global(.diary-content a.tall-img-more) {
+    position: absolute;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    z-index: 1;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 6px 14px;
+    white-space: nowrap;
+  }
+  :global(.diary-content a.tall-img-more:hover) {
+    border-color: var(--muted);
   }
 
   /* `---` を波線の区切りに（かけら帳の read-frag 区切りと同じ見た目） */
