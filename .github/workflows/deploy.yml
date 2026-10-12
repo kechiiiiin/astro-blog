@@ -43,7 +43,45 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Cloudflare API の一時的な不具合（「Received a malformed response from the API」等）で
+      # deploy が落ちることがあるため、deploy のステップだけを最大 2 回やり直す（合計 3 回）。
+      # ビルドは 1 回きり。1・2 回目は continue-on-error で失敗を握りつぶして次へ進み、
+      # 3 回目だけ素の失敗にする。したがって最終的に失敗したときだけ failure() になり、
+      # 下の「Notify Discord (失敗)」が出る（リトライで成功した run では出ない）。
+      # 3 つの deploy の with は同じに保つこと（wranglerVersion を上げるときは 3 箇所）。
       - name: Deploy to Cloudflare Workers
+        id: deploy1
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v4
+        with:
+          # 既定は wrangler 3 系。assets 専用 Worker（main なし）は 4 系が必要。
+          # package.json の devDependencies.wrangler と揃えること。
+          wranglerVersion: "4.114.0"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Wait before deploy retry (1)
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 30
+
+      - name: Deploy to Cloudflare Workers (retry 1)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v4
+        with:
+          # 既定は wrangler 3 系。assets 専用 Worker（main なし）は 4 系が必要。
+          # package.json の devDependencies.wrangler と揃えること。
+          wranglerVersion: "4.114.0"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Wait before deploy retry (2)
+        if: steps.deploy2.outcome == 'failure'
+        run: sleep 30
+
+      - name: Deploy to Cloudflare Workers (retry 2)
+        if: steps.deploy2.outcome == 'failure'
         uses: cloudflare/wrangler-action@v4
         with:
           # 既定は wrangler 3 系。assets 専用 Worker（main なし）は 4 系が必要。
