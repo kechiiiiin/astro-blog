@@ -127,6 +127,18 @@ const dateSmall = formatDisplayDate(date);
   :global(.diary-content p.blank-line) {
     margin: 0;
   }
+  /* かけらの時刻（かけら帳が書き出す `<p class="kakera-time"><time …>06:00</time></p>`）。
+     かけらの上に灰色・等幅の小さな小見出しとして出す（かけら時刻表示設計「表記2」・2026-10-12）。
+     見出し要素にしないので、目次・見出しの扱いには混ざらない。 */
+  :global(.diary-content p.kakera-time) {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin: 0 0 0.5em;
+  }
   :global(.diary-content strong) {
     font-weight: 700;
   }
